@@ -1,0 +1,1071 @@
+export interface DialogueOption {
+  optionId: string;
+  text: string;
+  tone: string;
+  unlockCondition: string | null;
+  effects: OptionEffects;
+  response: string;
+  responseMood: string;
+  nextDialogueId: string | null;
+}
+
+export interface OptionEffects {
+  moodChange: number;
+  affectionChange: number;
+  coinChange: number;
+  unlockItem: string | null;
+  unlockDialogue: string | null;
+}
+
+export interface DialogueEntry {
+  dialogueId: string;
+  speaker: string;
+  speakerEmoji: string;
+  text: string;
+  mood: string;
+  options: DialogueOption[];
+  triggerType: string;
+  triggerValue: string;
+  priority: number;
+  isOnce: boolean;
+  cooldownHours: number;
+}
+
+export interface TriggerRecord {
+  lastTriggerTime: number;
+  triggeredCount: number;
+}
+
+export interface DialogueTriggerResult {
+  dialogue: DialogueEntry;
+  source: string;
+}
+
+export const ALL_DIALOGUES: DialogueEntry[] = [
+  {
+    dialogueId: 'doro_morning_01',
+    speaker: 'doro',
+    speakerEmoji: '😴',
+    text: '唔…早啊…你来了呀~',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'doro_morning_01_a', text: '早上好呀，睡醒了吗？', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…你一来我就醒了！今天的阳光好好闻~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_morning_01_b', text: '小懒虫，起床啦！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '才不是懒虫呢！我已经醒了，只是在…感受早晨的空气！', responseMood: '傲娇', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_morning_01_c', text: '嗯，开始新的一天吧。', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '好！今天也要一起加油~先伸个懒腰…嘿咻！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'time_based', triggerValue: '6-10', priority: 60, isOnce: false, cooldownHours: 8
+  },
+  {
+    dialogueId: 'doro_night_01',
+    speaker: 'doro',
+    speakerEmoji: '🥱',
+    text: '哈啊~…今天辛苦啦…',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'doro_night_01_a', text: '晚安，做个好梦哦', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…你也是。我会梦到你的~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_night_01_b', text: '再玩一会儿嘛', tone: '撒娇',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '不行不行……已经到睡觉时间了！明天再陪你玩，拉钩！', responseMood: '傲娇', nextDialogueId: null
+      }
+    ],
+    triggerType: 'time_based', triggerValue: '20-23', priority: 55, isOnce: false, cooldownHours: 8
+  },
+  {
+    dialogueId: 'doro_sad_01',
+    speaker: 'doro',
+    speakerEmoji: '🥺',
+    text: '…今天好像什么都不太顺利呢…',
+    mood: '低落',
+    options: [
+      {
+        optionId: 'doro_sad_01_a', text: '怎么了？我在这里陪你', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '呜呜…你这么说我更想哭了…但是是开心的那种！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_sad_01_b', text: '笑一个嘛，给你讲个笑话', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '噗…你讲的冷笑话我闭着眼睛都能背出来啦…不过还是谢谢你~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_sad_01_c', text: '别难过，我们一起想办法', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…有你在旁边，感觉那些事也没那么可怕了。', responseMood: '平静', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_sad_01_d', text: '唉，我也好累……', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: -2, affectionChange: -1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '那你快去休息啦！我没事的——虽然嘴上这么说，但尾巴已经垂下来了。', responseMood: '低落', nextDialogueId: null
+      }
+    ],
+    triggerType: 'mood_based', triggerValue: 'mood<25', priority: 80, isOnce: false, cooldownHours: 4
+  },
+  {
+    dialogueId: 'doro_happy_01',
+    speaker: 'doro',
+    speakerEmoji: '🎉',
+    text: '今天超——棒！感觉可以飞起来！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_happy_01_a', text: '看到你开心我也开心~', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嘿嘿，那我们今天就是双倍开心！转圈圈~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_happy_01_b', text: '这么开心？那来跳舞吧！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 0, coinChange: 3, unlockItem: null, unlockDialogue: null },
+        response: '好呀好呀！你转左边我转右边…哎呀撞到了！哈哈哈~', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'mood_based', triggerValue: 'mood>80', priority: 60, isOnce: false, cooldownHours: 4
+  },
+  {
+    dialogueId: 'doro_ddl_done_01',
+    speaker: 'doro',
+    speakerEmoji: '🎊',
+    text: '耶！！DDL完成啦！！我们太厉害了！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_ddl_done_01_a', text: '多亏有你陪我~', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 2, coinChange: 5, unlockItem: null, unlockDialogue: null },
+        response: '才不是呢！是你自己完成的，我只是在旁边加油的那个！', responseMood: '害羞', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_ddl_done_01_b', text: '下一个DDL也冲了！', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 1, coinChange: 3, unlockItem: null, unlockDialogue: null },
+        response: '好！趁着手感火热，再来一个！Doro准备好了！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_ddl_done_01_c', text: '休息一下吧，累坏了', tone: '鼓励',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…确实有点累了。一起喝杯热牛奶好不好？', responseMood: '平静', nextDialogueId: null
+      }
+    ],
+    triggerType: 'ddl_done', triggerValue: 'any', priority: 75, isOnce: false, cooldownHours: 4
+  },
+  {
+    dialogueId: 'doro_ddl_overdue_01',
+    speaker: 'doro',
+    speakerEmoji: '😢',
+    text: '那个……DDL好像已经过了……你还好吗？',
+    mood: '低落',
+    options: [
+      {
+        optionId: 'doro_ddl_overdue_01_a', text: '没事，我现在就去补救', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '我陪你一起！两个人肯定比一个人快！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_ddl_overdue_01_b', text: '有点沮丧……让我缓缓', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…不急不急，我在这里陪你。下次我们提前一点开始好不好？', responseMood: '平静', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_ddl_overdue_01_c', text: '都怪这个任务太难了', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: -1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…确实有点难，不过下次我们拆成小块做，肯定没问题的！', responseMood: '鼓励', nextDialogueId: null
+      }
+    ],
+    triggerType: 'ddl_overdue', triggerValue: 'any', priority: 75, isOnce: false, cooldownHours: 6
+  },
+  {
+    dialogueId: 'doro_streak_5_01',
+    speaker: 'doro',
+    speakerEmoji: '🌟',
+    text: '恭喜你！连续完成5个DDL了！你是我见过最厉害的人！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_streak_5_01_a', text: '嘿嘿，小意思啦', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 3, coinChange: 15, unlockItem: '奖励头饰', unlockDialogue: null },
+        response: '才不是小意思呢！5个DDL连续完成超——酷的！送你一个小奖励！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_streak_5_01_b', text: '都是因为你在身边', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 5, coinChange: 10, unlockItem: null, unlockDialogue: null },
+        response: '呜…你这么说我都不好意思了！那、那以后也一直陪着你！', responseMood: '害羞', nextDialogueId: null
+      }
+    ],
+    triggerType: 'milestone', triggerValue: 'streak_5', priority: 100, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'doro_miss_01',
+    speaker: 'doro',
+    speakerEmoji: '🥺',
+    text: '…你终于来了！我还以为你不要我了呢……',
+    mood: '低落',
+    options: [
+      {
+        optionId: 'doro_miss_01_a', text: '对不起，我也想早点来', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '没关系！回来就好……我给你存了好多好多想说的话！', responseMood: '开心', nextDialogueId: 'doro_miss_02'
+      },
+      {
+        optionId: 'doro_miss_01_b', text: '这么想我呀？', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '才、才没有！……好吧有一点点想你。就一点点哦！', responseMood: '傲娇', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_miss_01_c', text: '这几天太忙了……', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '我知道的…你忙的时候我有乖乖等你哦！你看，我整理了这3天的天气预报！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'long_time_no_see', triggerValue: 'days>3', priority: 90, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'doro_miss_02',
+    speaker: 'doro',
+    speakerEmoji: '❤️',
+    text: '你想先听哪件——开心的、好笑的、还是…我想你的事？',
+    mood: '害羞',
+    options: [
+      {
+        optionId: 'doro_miss_02_a', text: '听你想我的事', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '唔…就是…每天晚上我都会看看门口，虽然知道你可能不会来…但是今天你来了！', responseMood: '害羞', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_miss_02_b', text: '开心的！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 0, coinChange: 3, unlockItem: null, unlockDialogue: null },
+        response: '好！前天有一只麻雀在窗台跳舞，笨笨的超好笑！我给你学一下…哎呀摔倒了！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'long_time_no_see', triggerValue: 'days>3', priority: 85, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'doro_snack_01',
+    speaker: 'doro',
+    speakerEmoji: '🍰',
+    text: '那个…你有没有闻到好香的甜点味道呀~？',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_snack_01_a', text: '有吗？我找找看', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '不用找啦！我带了你上次说好吃的草莓奶油包！分你一半！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_snack_01_b', text: '你又想讨零食了是吧？', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '才没有！我是那种为了零食撒娇的猫吗！…好吧我是…那有没有嘛~', responseMood: '撒娇', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_snack_01_c', text: '零食要适量哦', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '唔…你说得对…那我只吃一小块！真的就一小块！', responseMood: '平静', nextDialogueId: null
+      }
+    ],
+    triggerType: 'random', triggerValue: 'daily_random', priority: 40, isOnce: false, cooldownHours: 6
+  },
+  {
+    dialogueId: 'doro_decorate_01',
+    speaker: 'doro',
+    speakerEmoji: '🏠',
+    text: '哇…家园变了！你布置了新的装饰诶！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_decorate_01_a', text: '喜欢吗？专门为你弄的', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '超——喜欢！尤其是那个软垫，我已经在上面打了好几个滚了！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_decorate_01_b', text: '还差得远呢，继续改造', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯！下次我想要一个书架，可以放我们一起看的书！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_decorate_01_c', text: '嘿嘿，我的审美不错吧', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '哼哼，还不是因为有我这种超可爱的装饰品撑场面！', responseMood: '傲娇', nextDialogueId: null
+      }
+    ],
+    triggerType: 'decorate_changed', triggerValue: 'any', priority: 50, isOnce: false, cooldownHours: 12
+  },
+  {
+    dialogueId: 'doro_daily_first_01',
+    speaker: 'doro',
+    speakerEmoji: '☀️',
+    text: '欢迎回来！今天也是元气满满的一天呢！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_daily_first_01_a', text: '今天也要一起加油！', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯！今天的目标我都帮你记在墙上啦！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_daily_first_01_b', text: '今天有什么好事吗？', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '让我掐爪一算…嗯！今天适合完成大事！而且可能有小惊喜哦~', responseMood: '调皮', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_daily_first_01_c', text: '好困啊……', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: -1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '那我给你泡杯茶提提神！坐好等着哦~', responseMood: '温柔', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'any', priority: 70, isOnce: false, cooldownHours: 8
+  },
+  {
+    dialogueId: 'npc_xiaolan_visit_01',
+    speaker: 'npc_1',
+    speakerEmoji: '😊',
+    text: '你好呀！我是小蓝，住在隔壁小镇的蓝猫。听说你搬来了，特地来看看~',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_xiaolan_visit_01_a', text: '你好小蓝！好高兴认识你', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嘿嘿，你说话好温柔呀！以后我们可以经常一起玩！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_xiaolan_visit_01_b', text: '你家也在附近吗？', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '对呀！过了小桥就是，门口有蓝色绣球花的那家！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_xiaolan_visit_01_c', text: '有空常来玩哦', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '真的吗！那我以后天天来敲门…开玩笑的啦，不会那么频繁的！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_1', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_ahe_visit_01',
+    speaker: 'npc_2',
+    speakerEmoji: '🌾',
+    text: '哟~新人？我叫阿禾，田里干活的那只。你看起来不像能干活的样子啊。',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'npc_ahe_visit_01_a', text: '别小看我哦，我很能干的', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '哦？口气不小嘛！行，下次收庄稼叫你！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_ahe_visit_01_b', text: '我是来养Doro的啦', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '哦——养Doro的！那你应该很温柔吧。行，这片地的萝卜熟了分你一个。', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_2', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_mumu_visit_01',
+    speaker: 'npc_3',
+    speakerEmoji: '🎵',
+    text: '嗨~！我是沐沐！你听得到我耳机里的音乐吗？是今天刚发现的宝藏曲子！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_mumu_visit_01_a', text: '真的吗？我也想听！', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '来来来！分你一只耳机！是不是超好听？副歌部分我听了十遍了！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_mumu_visit_01_b', text: '小声点，Doro在睡觉', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '啊！抱歉抱歉！那…下次再给你听！', responseMood: '害羞', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_3', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_lizi_visit_01',
+    speaker: 'npc_4',
+    speakerEmoji: '🌰',
+    text: '嗯？新面孔。我是栗子，图书馆三楼靠窗那只猫。你来借书还是来找Doro的？',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'npc_lizi_visit_01_a', text: '来找Doro的，但也可以借书', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '不错的回答。三楼东区有本《拖延症自救指南》，推荐给你。', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_lizi_visit_01_b', text: '你是图书馆管理员？', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '非官方的那种。但我把每一本书都按颜色和心情重新排了一遍。', responseMood: '傲娇', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_4', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_xiaobei_visit_01',
+    speaker: 'npc_5',
+    speakerEmoji: '🏃',
+    text: '呼呼…跑完10圈！你是新来的邻居吗？我叫小北！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_xiaobei_visit_01_a', text: '10圈！你好厉害！', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嘿嘿，每天不跑跑就浑身不舒服！你要不要一起？', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_xiaobei_visit_01_b', text: '运动好累啊……', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '从散步开始嘛！走一圈也算运动！来来来，我陪你慢走一圈！', responseMood: '鼓励', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_5', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_tangtang_visit_01',
+    speaker: 'npc_6',
+    speakerEmoji: '🍬',
+    text: '你好呀~我是糖糖！我这里有水果糖、奶糖、薄荷糖，你想吃哪一种？',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_tangtang_visit_01_a', text: '我选水果糖！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '给！草莓味的，我最推荐！含着它心情会变好哦~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_tangtang_visit_01_b', text: '我不能吃太多糖……', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '那、那给你一颗无糖薄荷糖！清新口气也很棒啦！', responseMood: '温柔', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_6', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_xiao_ju_visit_01',
+    speaker: 'npc_7',
+    speakerEmoji: '🍊',
+    text: '午好——我是小橘。正在晒太阳，请不要挡到我的阳光，谢谢。',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'npc_xiao_ju_visit_01_a', text: '那我也一起晒吧', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…分你一半阳光。你很不错。', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_xiao_ju_visit_01_b', text: '打扰了……', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯，有礼貌。下次可以带杯茶来。', responseMood: '平静', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_7', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_tuantuan_visit_01',
+    speaker: 'npc_8',
+    speakerEmoji: '🧶',
+    text: '啊！你来了！我刚刚织完一条围巾，你帮我看看好不好看！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_tuantuan_visit_01_a', text: '哇，好漂亮！手好巧！', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '真的吗！嘿嘿…其实我拆了三次才织好的。送给你家Doro当见面礼吧！', responseMood: '害羞', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_tuantuan_visit_01_b', text: '这个配色不太适合我', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: -1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '唔…确实颜色有点跳…那我再改改！你说得对！', responseMood: '低落', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_8', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_doudou_visit_01',
+    speaker: 'npc_9',
+    speakerEmoji: '🧩',
+    text: '嗨~我是豆豆！我正在玩一个超难的拼图，你擅长拼图吗？',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_doudou_visit_01_a', text: '我试试！一起拼吧', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '太好了！边角已经拼好了，你来找中间的樱花部分！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_doudou_visit_01_b', text: '拼图太难了，我放弃', tone: '敷衍',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '别嘛！你先拼一块试试！就一块！保证你会上瘾！', responseMood: '鼓励', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_9', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_huahua_visit_01',
+    speaker: 'npc_10',
+    speakerEmoji: '🌸',
+    text: '嗨~我是花花！你家园里的花好精神呀，是你种的吗？',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_huahua_visit_01_a', text: '是啊，每天早上都浇水', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '好细心！那你一定也是个温柔的人。我下次带几颗稀有花种来给你！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_huahua_visit_01_b', text: '都是Doro在打理啦', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '你家Doro好能干！不过你也很厉害呀，能培养出这么棒的Doro！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'daily_first_visit', triggerValue: 'npc_10', priority: 60, isOnce: false, cooldownHours: 10
+  },
+  {
+    dialogueId: 'npc_bento_like_01',
+    speaker: 'doro',
+    speakerEmoji: '😍',
+    text: '哇！！是便当！！你特地给我做的吗！我超——级喜欢！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_bento_like_01_a', text: '知道你喜欢，特地做的', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '呜呜…你太好了！我要一口一口慢慢吃，把这份幸福拉长！', responseMood: '感动', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_bento_like_01_b', text: '吃吧吃吧，管够！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '好耶！真好吃得说不出话了…', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'after_gift', triggerValue: 'bento_like', priority: 70, isOnce: false, cooldownHours: 6
+  },
+  {
+    dialogueId: 'npc_bento_hate_01',
+    speaker: 'doro',
+    speakerEmoji: '😅',
+    text: '啊……这个便当……嗯……',
+    mood: '低落',
+    options: [
+      {
+        optionId: 'npc_bento_hate_01_a', text: '不喜欢吗？那我去换一个', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '不用不用！虽然不太合口味…但我会好好吃完的！因为是你的心意嘛…', responseMood: '傲娇', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_bento_hate_01_b', text: '挑食可不好哦', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '我才没有挑食！…只是这个青椒它…它看起来在瞪我！', responseMood: '傲娇', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_bento_hate_01_c', text: '下次做你喜欢的', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '真的吗！那…我想吃三文鱼饭团！…啊但是你不做也没关系的！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'after_gift', triggerValue: 'bento_hate', priority: 65, isOnce: false, cooldownHours: 6
+  },
+  {
+    dialogueId: 'npc_affection_60_01',
+    speaker: 'doro',
+    speakerEmoji: '💕',
+    text: '那个…我一直在想…我们已经是好朋友了吧？',
+    mood: '害羞',
+    options: [
+      {
+        optionId: 'npc_affection_60_01_a', text: '当然是！最好的那种', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 5, coinChange: 10, unlockItem: null, unlockDialogue: 'npc_affection_60_02' },
+        response: '呜哇…太好了…那这个给你——是我做的手环，上面有我的幸运色！', responseMood: '感动', nextDialogueId: 'npc_affection_60_02'
+      },
+      {
+        optionId: 'npc_affection_60_01_b', text: '不然呢，不然谁在这陪你', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 3, coinChange: 5, unlockItem: null, unlockDialogue: null },
+        response: '哼！你这么说…那我走了！…才怪！我才不走呢！', responseMood: '傲娇', nextDialogueId: null
+      }
+    ],
+    triggerType: 'affection_milestone', triggerValue: 'affection>=60', priority: 90, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'npc_affection_60_02',
+    speaker: 'doro',
+    speakerEmoji: '🎁',
+    text: '手环要一直戴着哦！这样你忙的时候，我就像在你身边一样！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_affection_60_02_a', text: '我会一直戴着的', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯！那说好了——永远是好朋友！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_affection_60_02_b', text: '它和你一样可爱', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 4, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '诶？说手环可爱还是说我可爱啦！…算了不问了，我都接受！', responseMood: '害羞', nextDialogueId: null
+      }
+    ],
+    triggerType: 'affection_milestone', triggerValue: 'affection>=60', priority: 85, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'npc_affection_80_01',
+    speaker: 'doro',
+    speakerEmoji: '💝',
+    text: '我有一件很重要的事要跟你说……',
+    mood: '害羞',
+    options: [
+      {
+        optionId: 'npc_affection_80_01_a', text: '我听着呢，你说', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 5, coinChange: 20, unlockItem: '信物盒', unlockDialogue: null },
+        response: '我、我最喜欢你了！不是朋友那种…是比朋友还要多更多的喜欢！给你！', responseMood: '害羞', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_affection_80_01_b', text: '我也有话想对你说', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 5, coinChange: 20, unlockItem: '信物盒', unlockDialogue: null },
+        response: '诶…？你、你先说！…不对，你先听我说完！我也！最喜欢你了！', responseMood: '害羞', nextDialogueId: null
+      }
+    ],
+    triggerType: 'affection_milestone', triggerValue: 'affection>=80', priority: 95, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'npc_sleep_touch_01',
+    speaker: 'doro',
+    speakerEmoji: '😠',
+    text: 'zzz…zzz…(被吵醒后)唔…是谁…',
+    mood: '低落',
+    options: [
+      {
+        optionId: 'npc_sleep_touch_01_a', text: '对不起！你继续睡吧', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '已经醒了…不过你道歉这么诚恳，原谅你啦…哈啊~', responseMood: '平静', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_sleep_touch_01_b', text: '太阳都晒屁股了还睡！', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: -1, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '我昨晚帮你整理DDL整理到很晚诶！让我再睡一会儿！Zzz…', responseMood: '生气', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_sleep_touch_01_c', text: '我就在旁边不出声', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯…那好吧…你在旁边我睡得反而更安心…', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'random', triggerValue: 'sleeping', priority: 30, isOnce: false, cooldownHours: 6
+  },
+  {
+    dialogueId: 'doro_random_01',
+    speaker: 'doro',
+    speakerEmoji: '🤔',
+    text: '我问你一个问题哦——如果我是人类，你觉得我会是什么样的人？',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_random_01_a', text: '一定是温柔可爱的类型', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嘿嘿…被你猜中了！我确实觉得自己会是个温柔的人！', responseMood: '害羞', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_random_01_b', text: '肯定是个调皮鬼', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '哼！那我一定是那种——只对你一个人调皮的类型！', responseMood: '傲娇', nextDialogueId: null
+      }
+    ],
+    triggerType: 'random', triggerValue: 'daily_random', priority: 20, isOnce: false, cooldownHours: 12
+  },
+  {
+    dialogueId: 'doro_random_02',
+    speaker: 'doro',
+    speakerEmoji: '📖',
+    text: '我今天看到一句话：重要的不是完成多少事，而是认真对待每一件事…我觉得说得对！',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'doro_random_02_a', text: '你越来越像哲学家了', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 0, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '那当然！天天和你一起看书，我进化了！从可爱猫变成智慧猫！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_random_02_b', text: '说得对，我们一起认真生活', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嗯！和你一起的话，普通的日子也会变成特别的回忆。', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'random', triggerValue: 'daily_random', priority: 15, isOnce: false, cooldownHours: 12
+  },
+  {
+    dialogueId: 'npc_bento_like_npc_01',
+    speaker: 'npc_1',
+    speakerEmoji: '😊',
+    text: '你给我带了便当吗？哇！是我喜欢的口味！谢谢！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'npc_bento_like_npc_01_a', text: '特地给你带的，快尝尝', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 3, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '呜！这个味道…你是怎么知道我最喜欢这个的！太好吃了！', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_bento_like_npc_01_b', text: '顺手做的啦', tone: '调皮',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '嘿嘿，那这个顺手的便当也太好吃了吧！下次再顺手一次好不好？', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'after_gift', triggerValue: 'bento_like_npc', priority: 65, isOnce: false, cooldownHours: 8
+  },
+  {
+    dialogueId: 'npc_bento_hate_npc_01',
+    speaker: 'npc_4',
+    speakerEmoji: '😐',
+    text: '……这是给我的？',
+    mood: '平静',
+    options: [
+      {
+        optionId: 'npc_bento_hate_npc_01_a', text: '嗯，想和你分享', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '…谢谢。虽然不是我喜欢的那种…但我读到过，接受别人的心意也是一种礼貌。', responseMood: '平静', nextDialogueId: null
+      },
+      {
+        optionId: 'npc_bento_hate_npc_01_b', text: '不喜欢的话不用勉强', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 0, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: null },
+        response: '不勉强。下次我告诉你我喜欢什么，你再做的话我会更开心。', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'after_gift', triggerValue: 'bento_hate_npc', priority: 60, isOnce: false, cooldownHours: 8
+  },
+  {
+    dialogueId: 'doro_streak_10_01',
+    speaker: 'doro',
+    speakerEmoji: '👑',
+    text: '10个！连续10个DDL！你已经是传说级的时间管理大师了！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_streak_10_01_a', text: '都是因为你在监督我', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 5, affectionChange: 5, coinChange: 30, unlockItem: '金色奖杯', unlockDialogue: null },
+        response: '呜呜呜…我真的好为你骄傲！这个金色奖杯给你，你值得的！', responseMood: '感动', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_streak_10_01_b', text: '下一个目标是20个！', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 3, coinChange: 20, unlockItem: null, unlockDialogue: null },
+        response: '好！目标20个！Doro会一路陪着你冲刺！', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'milestone', triggerValue: 'streak_10', priority: 100, isOnce: true, cooldownHours: 0
+  }
+];
+
+export class DialogueSession {
+  currentDialogueId: string = '';
+  currentOptionIndex: number = -1;
+  typewriterIndex: number = 0;
+  typewriterText: string = '';
+  showOptions: boolean = false;
+  isActive: boolean = false;
+  isAnimating: boolean = false;
+  effectText: string = '';
+  effectColor: string = '#FF8F9F';
+}
+
+export class DialogueManager {
+  private triggerRecords: Record<string, TriggerRecord> = {};
+  private triggeredOnce: Record<string, boolean> = {};
+  private session: DialogueSession = new DialogueSession();
+  private dialogueMap: Record<string, DialogueEntry> = {};
+  private currentDialogue: DialogueEntry | null = null;
+  private typewriterTimer: number = -1;
+
+  constructor() {
+    for (let i: number = 0; i < ALL_DIALOGUES.length; i++) {
+      const d: DialogueEntry = ALL_DIALOGUES[i];
+      this.dialogueMap[d.dialogueId] = d;
+    }
+  }
+
+  private getHour(): number {
+    const now: Date = new Date();
+    return now.getHours();
+  }
+
+  private getTodayStr(): string {
+    const now: Date = new Date();
+    return now.getFullYear().toString() + '-' + (now.getMonth() + 1).toString() + '-' + now.getDate().toString();
+  }
+
+  private isOnCooldown(dialogueId: string): boolean {
+    const record: TriggerRecord | undefined = this.triggerRecords[dialogueId];
+    if (record === undefined) {
+      return false;
+    }
+    const entry: DialogueEntry | undefined = this.dialogueMap[dialogueId];
+    if (entry === undefined) {
+      return false;
+    }
+    if (entry.cooldownHours <= 0) {
+      return false;
+    }
+    const elapsed: number = Date.now() - record.lastTriggerTime;
+    return elapsed < entry.cooldownHours * 3600000;
+  }
+
+  private isTriggeredOnce(dialogueId: string): boolean {
+    return this.triggeredOnce[dialogueId] === true;
+  }
+
+  markTriggered(dialogueId: string): void {
+    const existing: TriggerRecord | undefined = this.triggerRecords[dialogueId];
+    if (existing !== undefined) {
+      this.triggerRecords[dialogueId] = {
+        lastTriggerTime: Date.now(),
+        triggeredCount: existing.triggeredCount + 1
+      };
+    } else {
+      this.triggerRecords[dialogueId] = {
+        lastTriggerTime: Date.now(),
+        triggeredCount: 1
+      };
+    }
+    const entry: DialogueEntry | undefined = this.dialogueMap[dialogueId];
+    if (entry !== undefined && entry.isOnce) {
+      this.triggeredOnce[dialogueId] = true;
+    }
+  }
+
+  getDialogueById(id: string): DialogueEntry | null {
+    const entry: DialogueEntry | undefined = this.dialogueMap[id];
+    if (entry !== undefined) {
+      return entry;
+    }
+    return null;
+  }
+
+  checkTimeBased(currentHour: number): DialogueEntry | null {
+    let best: DialogueEntry | null = null;
+    let bestPriority: number = -1;
+    for (let i: number = 0; i < ALL_DIALOGUES.length; i++) {
+      const d: DialogueEntry = ALL_DIALOGUES[i];
+      if (d.triggerType !== 'time_based') {
+        continue;
+      }
+      if (d.isOnce && this.isTriggeredOnce(d.dialogueId)) {
+        continue;
+      }
+      if (this.isOnCooldown(d.dialogueId)) {
+        continue;
+      }
+      const range: string = d.triggerValue;
+      const parts: string[] = range.split('-');
+      if (parts.length === 2) {
+        const low: number = parseInt(parts[0]);
+        const high: number = parseInt(parts[1]);
+        if (currentHour >= low && currentHour < high) {
+          if (d.priority > bestPriority) {
+            best = d;
+            bestPriority = d.priority;
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  checkMoodBased(mood: number): DialogueEntry | null {
+    let best: DialogueEntry | null = null;
+    let bestPriority: number = -1;
+    for (let i: number = 0; i < ALL_DIALOGUES.length; i++) {
+      const d: DialogueEntry = ALL_DIALOGUES[i];
+      if (d.triggerType !== 'mood_based') {
+        continue;
+      }
+      if (d.isOnce && this.isTriggeredOnce(d.dialogueId)) {
+        continue;
+      }
+      if (this.isOnCooldown(d.dialogueId)) {
+        continue;
+      }
+      const cond: string = d.triggerValue;
+      let matched: boolean = false;
+      if (cond === 'mood<25' && mood < 25) {
+        matched = true;
+      } else if (cond === 'mood>80' && mood > 80) {
+        matched = true;
+      }
+      if (matched && d.priority > bestPriority) {
+        best = d;
+        bestPriority = d.priority;
+      }
+    }
+    return best;
+  }
+
+  checkDailyFirst(): DialogueEntry | null {
+    let best: DialogueEntry | null = null;
+    let bestPriority: number = -1;
+    for (let i: number = 0; i < ALL_DIALOGUES.length; i++) {
+      const d: DialogueEntry = ALL_DIALOGUES[i];
+      if (d.triggerType !== 'daily_first_visit') {
+        continue;
+      }
+      if (d.isOnce && this.isTriggeredOnce(d.dialogueId)) {
+        continue;
+      }
+      if (this.isOnCooldown(d.dialogueId)) {
+        continue;
+      }
+      if (d.priority > bestPriority) {
+        best = d;
+        bestPriority = d.priority;
+      }
+    }
+    return best;
+  }
+
+  checkMoodDialogue(mood: number): DialogueEntry | null {
+    if (mood < 25) {
+      return this.getDialogueById('doro_sad_01');
+    }
+    if (mood > 80) {
+      return this.getDialogueById('doro_happy_01');
+    }
+    return null;
+  }
+
+  findNextDialogue(currentId: string, selectedOption: DialogueOption): DialogueEntry | null {
+    if (selectedOption.nextDialogueId === null) {
+      return null;
+    }
+    return this.getDialogueById(selectedOption.nextDialogueId);
+  }
+
+  getSession(): DialogueSession {
+    return this.session;
+  }
+
+  startDialogue(dialogueId: string): DialogueEntry | null {
+    const entry: DialogueEntry | null = this.getDialogueById(dialogueId);
+    if (entry === null) {
+      return null;
+    }
+    this.currentDialogue = entry;
+    this.session.currentDialogueId = dialogueId;
+    this.session.typewriterIndex = 0;
+    this.session.typewriterText = '';
+    this.session.showOptions = false;
+    this.session.isActive = true;
+    this.session.isAnimating = true;
+    this.session.currentOptionIndex = -1;
+    this.session.effectText = '';
+    this.markTriggered(dialogueId);
+    return entry;
+  }
+
+  selectOption(optionIndex: number): DialogueOption | null {
+    if (this.currentDialogue === null) {
+      return null;
+    }
+    if (optionIndex < 0 || optionIndex >= this.currentDialogue.options.length) {
+      return null;
+    }
+    this.session.currentOptionIndex = optionIndex;
+    return this.currentDialogue.options[optionIndex];
+  }
+
+  getCurrentDialogue(): DialogueEntry | null {
+    return this.currentDialogue;
+  }
+
+  endDialogue(): void {
+    this.session.isActive = false;
+    this.session.isAnimating = false;
+    this.currentDialogue = null;
+    this.session.currentOptionIndex = -1;
+    this.session.effectText = '';
+  }
+}
