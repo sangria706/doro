@@ -627,6 +627,7 @@ export struct ProfileOverlay {
   @Prop focusCount: number = 0;
   onNameChange?: (value: string) => void;
   onSave?: () => void;
+  onAchievement?: () => void;
   onClose?: () => void;
 
   build() {
@@ -687,6 +688,18 @@ export struct ProfileOverlay {
           this.UserRow('DDL完成', this.focusCount.toString() + ' 个')
         }
         .width('100%')
+        Button('成就')
+          .width('100%')
+          .height(44)
+          .fontColor('#5A403A')
+          .fontWeight(FontWeight.Bold)
+          .backgroundColor('#F8EFFF')
+          .borderRadius(22)
+          .onClick(() => {
+            if (this.onAchievement !== undefined) {
+              this.onAchievement();
+            }
+          })
         Button('保存')
           .width('100%')
           .height(44)

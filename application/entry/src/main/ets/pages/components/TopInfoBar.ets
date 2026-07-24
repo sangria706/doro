@@ -5,9 +5,10 @@ export struct TopInfoBar {
   @Prop expProgress: number = 0;
   @Prop coins: number = 0;
   @Prop gems: number = 0;
-  @Prop hasEventUpdate: boolean = false;
+  @Prop claimableAchievementCount: number = 0;
   onAvatarClick?: () => void;
   onShopClick?: () => void;
+  onAchievementClick?: () => void;
 
   build() {
     Column() {
@@ -60,6 +61,26 @@ export struct TopInfoBar {
       .width('100%')
       .padding({ top: 6, bottom: 6 })
       Row({ space: 6 }) {
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Text('成就')
+            .fontSize(12)
+            .fontColor('#FFFFFF')
+            .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+            .backgroundColor('#BBA6E8')
+            .borderRadius(14)
+          if (this.claimableAchievementCount > 0) {
+            Circle()
+              .width(8)
+              .height(8)
+              .fill('#FF4757')
+              .margin({ top: -2, right: -2 })
+          }
+        }
+        .onClick(() => {
+          if (this.onAchievementClick !== undefined) {
+            this.onAchievementClick();
+          }
+        })
         this.IconBtn('设置')
         this.IconBtn('音效')
         this.IconBtn('更多')
@@ -72,37 +93,11 @@ export struct TopInfoBar {
             .padding({ left: 12, right: 12, top: 5, bottom: 5 })
             .backgroundColor('#FF8F9F')
             .borderRadius(14)
-          if (this.hasEventUpdate) {
-            Circle()
-              .width(8)
-              .height(8)
-              .fill('#FF4757')
-              .align(Alignment.TopEnd)
-              .offset({ x: 4, y: -4 })
-          }
         }
         .onClick(() => {
           if (this.onShopClick !== undefined) {
             this.onShopClick();
           }
-        })
-        Stack() {
-          Text('活动')
-            .fontSize(12)
-            .fontColor('#FFFFFF')
-            .padding({ left: 12, right: 12, top: 5, bottom: 5 })
-            .backgroundColor('#BBA6E8')
-            .borderRadius(14)
-          if (this.hasEventUpdate) {
-            Circle()
-              .width(8)
-              .height(8)
-              .fill('#FF4757')
-              .align(Alignment.TopEnd)
-              .offset({ x: 4, y: -4 })
-          }
-        }
-        .onClick(() => {
         })
       }
       .width('100%')

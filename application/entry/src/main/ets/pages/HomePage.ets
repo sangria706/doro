@@ -10,6 +10,7 @@ export struct HomePage {
   @Prop pendingCount: number = 0;
   @Prop overdueCount: number = 0;
   @Prop doroWords: string = '';
+  @Prop showDoroSpeech: boolean = true;
   onFeed?: () => void;
   onTouchDoro?: () => void;
   onDress?: () => void;
@@ -20,7 +21,12 @@ export struct HomePage {
       TopStatus({ mood: this.mood, satiety: this.satiety, coins: this.coins, feedback: this.feedback })
       Scroll() {
         Column({ space: 14 }) {
-          this.DoroScene('home')
+          Stack({ alignContent: Alignment.Center }) {
+            this.DoroScene('home')
+            if (this.showDoroSpeech) {
+              this.DoroSpeechBubble()
+            }
+          }
           Row({ space: 10 }) {
             Button('喂食')
               .layoutWeight(1)
@@ -71,7 +77,6 @@ export struct HomePage {
                 }
               })
           }
-          this.SpeechCard()
           Row({ space: 10 }) {
             this.HomeStat('舒适度', `${this.comfort} 星`, '#BBA6E8')
             this.HomeStat('待办DDL', `${this.pendingCount} 个`, '#FF8F9F')
@@ -153,23 +158,30 @@ export struct HomePage {
   }
 
   @Builder
-  SpeechCard() {
-    Column({ space: 8 }) {
-      Text('Doro说')
-        .fontSize(12)
-        .fontColor('#9B7D76')
-      Text(`"${this.doroWords}"`)
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#5A403A')
-        .lineHeight(27)
+  DoroSpeechBubble() {
+    Column() {
+      Column({ space: 4 }) {
+        Text(this.doroWords)
+          .fontSize(17)
+          .fontColor('#8E3A57')
+          .fontWeight(FontWeight.Medium)
+          .lineHeight(24)
+      }
+      .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+      .backgroundColor('#00000000')
     }
-    .alignItems(HorizontalAlign.Start)
-    .width('100%')
-    .padding(18)
-    .backgroundColor('#FFFFFC')
-    .borderRadius(22)
-    .shadow({ radius: 18, color: '#22FF9EAF', offsetX: 0, offsetY: 6 })
+    .alignSelf(ItemAlign.Center)
+    .width('82%')
+    .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+    .backgroundColor('#00000000')
+    .borderRadius(24)
+    .border({ width: 1, color: '#E7B1C2', style: BorderStyle.Solid })
+    .shadow({ radius: 16, color: '#22FF9EAF', offsetX: 0, offsetY: 4 })
+    .onClick(() => {
+      if (this.onTouchDoro !== undefined) {
+        this.onTouchDoro();
+      }
+    })
   }
 
   @Builder

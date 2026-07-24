@@ -1,15 +1,31 @@
-import { DdlTask, InventoryItem, ShopItem, FriendInfo, ChatMessage, TaskJson, FriendJson, SaveData } from './AppState';
+import { DdlTask, InventoryItem, ShopItem, FriendInfo, ChatMessage } from './AppState';
 import { DialogueEntry, DialogueOption, DialogueManager } from './DialogueSystem';
-import { CatNPC, CatAffection, CatBento, BentoResult, ALL_CATS, BENTO_LIST, getCatById, getBentoById, getAffectionLevel, getAffectionColor, getAffectionLevelEmoji, getDailyDialogue, getBentoReaction, isCatAwake } from './CatNPCSystem';
+import { CatNPC, CatAffection, ALL_CATS, BENTO_LIST, getCatById, isCatAwake } from './CatNPCSystem';
+import { CatNpcService, CatNpcVisitState, CatNpcBentoResultState, CatNpcChatSelectionResult } from '../services/CatNpcService';
 import { HomePage } from './HomePage';
 import { DdlPage } from './DdlPage';
 import { FocusPage } from './FocusPage';
 import { BagPage } from './BagPage';
 import { CatListPage } from './CatListPage';
 import { CatDetailPage } from './CatDetailPage';
+import { AchievementItem, AchievementClaimResult, TEST_ACHIEVEMENTS, cloneAchievements } from './AchievementSystem';
+import { DdlTaskService, DdlTaskAddResult, DdlTaskFinishResult } from '../services/DdlTaskService';
+import {
+  FocusTimerService,
+  FocusCompleteResult,
+  FocusToggleResult,
+  FocusResetResult,
+  FocusContinueResult,
+  FocusTickResult
+} from '../services/FocusTimerService';
+import { SaveDataService, SaveSnapshot, LoadDataResult, SyncLocalResult } from '../services/SaveDataService';
 import { TopInfoBar } from './components/TopInfoBar';
 import { BottomToolbar } from './components/BottomToolbar';
 import { FeedPickerOverlay, DressPickerOverlay, FocusCompleteOverlay, DdlPickerOverlay, ShopAsOverlay, SearchFriendOverlay, ProfileOverlay, DialogueOverlay, BentoPickerOverlay, BentoResultOverlay, LevelUpOverlay } from './components/Overlays';
+import { AchievementUnlockOverlay } from './components/AchievementOverlay';
+import { AchievementListOverlay } from './components/AchievementListOverlay';
+import { QuickDdlCreateOverlay } from './components/QuickDdlCreateOverlay';
+import { DdlQuickFloatBar } from './components/DdlQuickFloatBar';
 
 @Entry
 @Component
@@ -29,7 +45,7 @@ struct Index {
   @State doroName: string = '桃桃';
   @State usernameHint: string = '2-12个字符，中文/英文/数字/下划线';
   @State newTitle: string = '';
-  @State newDeadline: string = '2026-07-21 14:00';
+  @State newDeadline: string = '';
   @State newDifficulty: string = '困难';
   @State mood: number = 76;
   @State satiety: number = 68;
@@ -44,6 +60,7 @@ struct Index {
   @State showFocusCompleteDialog: boolean = false;
   @State focusMarkDdlDone: boolean = false;
   @State showDdlPicker: boolean = false;
+  @State showQuickDdlCreate: boolean = false;
   @State showFeedPicker: boolean = false;
   @State showDressPicker: boolean = false;
   @State shopTab: number = 0;
@@ -62,6 +79,9 @@ struct Index {
     new DdlTask(3, '复习期末重点', '2026-07-18 20:00', '普通', 65, false),
     new DdlTask(4, '整理第一份 DDL', '2026-07-17 16:30', '简单', 100, true)
   ];
+  private ddlTaskService: DdlTaskService = new DdlTaskService();
+  private readonly focusTimerService: FocusTimerService = new FocusTimerService();
+  private readonly saveService: SaveDataService = new SaveDataService();
   @State foods: InventoryItem[] = [
     new InventoryItem('普通便当', '免费，适合送给好友的日常关心', 1),
     new InventoryItem('热牛奶', '饱腹度 +12，Doro 会露出安心表情', 2),
@@ -89,7 +109,6 @@ struct Index {
     new ShopItem('薄荷绿植', '舒适度 +3', 14, 'furniture', 0, 0),
     new ShopItem('暖光小灯', '舒适度 +5', 22, 'furniture', 0, 0)
   ];
-  private timerId: number = -1;
   @State gems: number = 48;
   @State hasEventUpdate: boolean = true;
   @State showDialogue: boolean = false;
@@ -110,6 +129,11 @@ struct Index {
   private dialogueManager: DialogueManager = new DialogueManager();
   private dialogueTypewriterTimer: number = -1;
   @State catAffections: Record<string, CatAffection> = {};
+  private catNpcService: CatNpcService = new CatNpcService(this.catAffections, {
+    saveData: () => this.persistSave(),
+    pad: (value: number) => this.pad(value),
+    closeCatDetail: () => this.closeCatDetail()
+  });
   @State showCatList: boolean = true;
   @State selectedCat: CatNPC | null = null;
   @State selectedCatAffection: number = 0;
@@ -126,6 +150,11 @@ struct Index {
   @State catChatMessages: ChatMessage[] = [];
   @State catChatShowOptions: boolean = false;
   @State catChatDone: boolean = false;
+  @State achievements: AchievementItem[] = cloneAchievements(TEST_ACHIEVEMENTS);
+  @State showAchievementUnlock: boolean = false;
+  @State showAchievementList: boolean = false;
+  @State achievementUnlockName: string = '';
+  private achievementUnlockTimer: number = -1;
 
   aboutToAppear(): void {
     this.loadData();
@@ -164,93 +193,158 @@ struct Index {
     return value;
   }
 
-  private syncLocalChange(text: string): void {
-    this.syncVersion += 1;
-    this.feedback = text;
-    this.saveData();
-  }
-
-  private saveData(): void {
-    PersistentStorage.persistProp('doro_save', '');
-    const taskArray: TaskJson[] = [];
-    for (let i: number = 0; i < this.tasks.length; i++) {
-      const t: DdlTask = this.tasks[i];
-      const tj: TaskJson = { id: t.id, title: t.title, deadline: t.deadline, difficulty: t.difficulty, progress: t.progress, done: t.done };
-      taskArray.push(tj);
-    }
-    const friendArray: FriendJson[] = [];
-    for (let i: number = 0; i < this.friends.length; i++) {
-      const f: FriendInfo = this.friends[i];
-      const fj: FriendJson = { id: f.id, name: f.name, doroName: f.doroName, isOnline: f.isOnline };
-      friendArray.push(fj);
-    }
-    const affs: CatAffection[] = [];
-    const keys: string[] = Object.keys(this.catAffections);
-    for (let i: number = 0; i < keys.length; i++) {
-      const aff: CatAffection | undefined = this.catAffections[keys[i]];
-      if (aff !== undefined) {
-        affs.push(aff);
-      }
-    }
-    const data: SaveData = {
-      tasks: taskArray,
+  private buildSaveSnapshot(): SaveSnapshot {
+    return {
+      tasks: this.tasks,
       focusMinutesToday: this.focusMinutesToday,
       focusCount: this.focusCount,
       coins: this.coins,
       mood: this.mood,
       satiety: this.satiety,
       syncVersion: this.syncVersion,
-      friends: friendArray
+      friends: this.friends,
+      catAffections: this.catAffections,
+      achievements: this.achievements
     };
-    AppStorage.set('doro_save', JSON.stringify(data));
-    AppStorage.set('cat_affections', JSON.stringify(affs));
+  }
+
+  private applySaveSnapshot(snapshot: SaveSnapshot): void {
+    this.tasks = snapshot.tasks;
+    this.focusMinutesToday = snapshot.focusMinutesToday;
+    this.focusCount = snapshot.focusCount;
+    this.coins = snapshot.coins;
+    this.mood = snapshot.mood;
+    this.satiety = snapshot.satiety;
+    this.syncVersion = snapshot.syncVersion;
+    this.friends = snapshot.friends;
+    this.catAffections = snapshot.catAffections;
+    this.achievements = snapshot.achievements;
+  }
+
+  private persistSave(): void {
+    this.saveService.saveData(this.buildSaveSnapshot());
+  }
+
+  private syncLocalChange(text: string): void {
+    const snap: SaveSnapshot = this.buildSaveSnapshot();
+    const res: SyncLocalResult = this.saveService.syncLocalChange(snap, text);
+    this.syncVersion = res.syncVersion;
+    this.feedback = res.feedback;
+  }
+
+  private sortAchievements(items: AchievementItem[]): AchievementItem[] {
+    const unlocked: AchievementItem[] = [];
+    const claimable: AchievementItem[] = [];
+    const claimed: AchievementItem[] = [];
+    for (let i: number = 0; i < items.length; i++) {
+      const item: AchievementItem = items[i];
+      const copy: AchievementItem = {
+        id: item.id,
+        name: item.name,
+        desc: item.desc,
+        completed: item.completed,
+        claimed: item.claimed,
+        rewardGems: item.rewardGems,
+        rewardCoins: item.rewardCoins
+      };
+      if (!item.completed) {
+        unlocked.push(copy);
+      } else if (!item.claimed) {
+        claimable.push(copy);
+      } else {
+        claimed.push(copy);
+      }
+    }
+    return unlocked.concat(claimable).concat(claimed);
+  }
+
+  private updateAchievementProgress(): void {
+    const map: Record<string, boolean> = {
+      'ach_focus_1': this.focusCount >= 1,
+      'ach_ddl_1': this.tasks.some((task: DdlTask) => task.done),
+      'ach_friend_1': this.friends.length >= 6
+    };
+    const nextAchievements: AchievementItem[] = [];
+    for (let i: number = 0; i < this.achievements.length; i++) {
+      const item: AchievementItem = this.achievements[i];
+      const completed: boolean = map[item.id] === true;
+      nextAchievements.push({
+        id: item.id,
+        name: item.name,
+        desc: item.desc,
+        completed: completed,
+        claimed: item.claimed,
+        rewardGems: item.rewardGems,
+        rewardCoins: item.rewardCoins
+      });
+    }
+    this.achievements = this.sortAchievements(nextAchievements);
+  }
+
+  private claimAchievement(achievementId: string): AchievementClaimResult | undefined {
+    const claimed = this.achievements.find((item: AchievementItem) => item.id === achievementId);
+    if (claimed === undefined || !claimed.completed || claimed.claimed) {
+      return undefined;
+    }
+    const nextAchievements: AchievementItem[] = [];
+    for (let i: number = 0; i < this.achievements.length; i++) {
+      const item: AchievementItem = this.achievements[i];
+      nextAchievements.push({
+        id: item.id,
+        name: item.name,
+        desc: item.desc,
+        completed: item.completed,
+        claimed: item.id === achievementId ? true : item.claimed,
+        rewardGems: item.rewardGems,
+        rewardCoins: item.rewardCoins
+      });
+    }
+    this.achievements = this.sortAchievements(nextAchievements);
+    this.gems += claimed.rewardGems;
+    this.coins += claimed.rewardCoins;
+    this.feedback = '成就奖励已领取';
+    this.persistSave();
+    this.showAchievementList = false;
+    this.showAchievementUnlockToast(claimed.name);
+    return {
+      rewardGems: claimed.rewardGems,
+      rewardCoins: claimed.rewardCoins,
+      showRewardPopup: true
+    };
+  }
+
+  private openAchievementList(): void {
+    this.showAchievementList = true;
+  }
+
+  private showAchievementUnlockToast(name: string): void {
+    this.achievementUnlockName = name;
+    this.showAchievementUnlock = true;
+    if (this.achievementUnlockTimer !== -1) {
+      clearTimeout(this.achievementUnlockTimer);
+    }
+    this.achievementUnlockTimer = setTimeout(() => {
+      this.showAchievementUnlock = false;
+      this.achievementUnlockTimer = -1;
+    }, 3000) as number;
   }
 
   private loadData(): void {
-    PersistentStorage.persistProp('doro_save', '');
-    const raw: Object = AppStorage.get('doro_save') as Object;
-    const json: string = raw !== undefined ? raw as string : '';
-    if (json.length > 0) {
-      const data: SaveData = JSON.parse(json) as SaveData;
-      this.tasks = data.tasks.map((td: TaskJson) =>
-        new DdlTask(td.id, td.title, td.deadline, td.difficulty, td.progress, td.done));
-      this.focusMinutesToday = data.focusMinutesToday;
-      this.focusCount = data.focusCount;
-      this.coins = data.coins;
-      this.mood = data.mood;
-      this.satiety = data.satiety;
-      this.syncVersion = data.syncVersion;
-      if (data.friends !== undefined) {
-        this.friends = data.friends.map((fj: FriendJson) =>
-          new FriendInfo(fj.id, fj.name, fj.doroName, fj.isOnline));
-      }
+    const loaded: LoadDataResult = this.saveService.loadData(this.buildSaveSnapshot());
+    if (loaded.hasMainSave || loaded.hasCatSave) {
+      this.applySaveSnapshot(loaded.snapshot);
+    } else {
+      this.achievements = loaded.snapshot.achievements;
     }
-    PersistentStorage.persistProp('cat_affections', '');
-    const affRaw: Object = AppStorage.get('cat_affections') as Object;
-    const affJson: string = affRaw !== undefined ? affRaw as string : '';
-    if (affJson.length > 0) {
-      const affs: CatAffection[] = JSON.parse(affJson) as CatAffection[];
-      for (let i: number = 0; i < affs.length; i++) {
-        const aff: CatAffection = affs[i];
-        this.catAffections[aff.npcId] = aff;
-      }
-    }
+    this.updateAchievementProgress();
   }
 
   private pendingCount(): number {
-    return this.tasks.filter((task: DdlTask) => !task.done && !this.isOverdue(task)).length;
+    return this.ddlTaskService.pendingCount(this.tasks);
   }
 
   private overdueCount(): number {
-    return this.tasks.filter((task: DdlTask) => !task.done && this.isOverdue(task)).length;
-  }
-
-  private isOverdue(task: DdlTask): boolean {
-    return new Date(this.normalizeDeadline(task.deadline)).getTime() < new Date().getTime();
-  }
-
-  private normalizeDeadline(value: string): string {
-    return value.replace(' ', 'T');
+    return this.ddlTaskService.overdueCount(this.tasks);
   }
 
   private calcLevel(): number {
@@ -290,51 +384,82 @@ struct Index {
     this.doroWords = `你就是我的主人吗？我叫${this.doroName}！`;
   }
 
-  private addTask(): void {
-    const title: string = this.newTitle.trim();
-    if (title.length === 0) {
-      this.doroWords = '契约要先写下名字哦。';
-      this.ddlStep = 0;
-      return;
+  private openQuickDdlCreate(): void {
+    this.ddlStep = 0;
+    this.doroWords = '';
+    this.showQuickDdlCreate = true;
+  }
+
+  private handleQuickDdlPrev(): void {
+    if (this.ddlStep > 0) {
+      this.ddlStep = this.ddlStep - 1;
     }
-    if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(this.newDeadline)) {
-      this.doroWords = '日期格式写成 2026-07-21 14:00。';
+  }
+
+  private handleQuickDdlNext(): void {
+    if (this.ddlStep === 0) {
+      if (this.newTitle.trim().length === 0) {
+        this.doroWords = '契约要先写下名字哦。';
+        this.ddlStep = 0;
+        return;
+      }
+      this.doroWords = '';
       this.ddlStep = 1;
       return;
     }
-    const task: DdlTask = new DdlTask(Date.now(), title, this.newDeadline, this.newDifficulty, 0, false);
-    this.tasks = [task, ...this.tasks];
-    this.selectedTaskId = task.id;
-    this.newTitle = '';
-    this.ddlStep = 0;
-    this.coins += 3;
-    this.doroWords = '契约成立！Doro 盖上了小爪印。';
-    this.syncLocalChange('+3 Doro币');
+    if (this.ddlStep === 1) {
+      // 与 DdlTaskService 一致的时间校验文案，但不在此步创建任务
+      const deadlineReg: RegExp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+      if (!deadlineReg.test(this.newDeadline)) {
+        this.doroWords = '日期格式写成 2026-05-21 13:14哦。';
+        this.ddlStep = 1;
+        return;
+      }
+      const deadlineTime: number = new Date(this.newDeadline.replace(' ', 'T')).getTime();
+      if (deadlineTime <= Date.now()) {
+        this.doroWords = '截止时间不能早于现在哦。';
+        this.ddlStep = 1;
+        return;
+      }
+      this.doroWords = '';
+      this.ddlStep = 2;
+      return;
+    }
+    this.handleAddDdlTask();
   }
 
-  private finishTask(taskId: number): void {
-    let reward: number = 0;
-    let late: boolean = false;
-    this.tasks = this.tasks.map((task: DdlTask) => {
-      if (task.id === taskId && !task.done) {
-        late = this.isOverdue(task);
-        reward = late ? 6 : 18;
-        return new DdlTask(task.id, task.title, task.deadline, task.difficulty, 100, true);
-      }
-      return task;
-    });
-    if (reward > 0) {
-      this.coins += reward;
-      this.mood = this.clamp(this.mood + (late ? 2 : 8));
-      this.satiety = this.clamp(this.satiety - 2);
-      this.doroWords = late ? '虽然晚了一点，Doro 还是松了一口气。' : '提前完成！Doro 开心得转了一圈。';
-      this.syncLocalChange(`+${reward} 币  心情+${late ? 2 : 8}`);
-      if (!this.showDialogue) {
-        if (late) {
-          this.triggerDdlOverdueDialogue();
-        } else {
-          this.triggerDdlDoneDialogue();
-        }
+  private handleAddDdlTask(): void {
+    const result: DdlTaskAddResult = this.ddlTaskService.addTask(this.tasks, this.newTitle, this.newDeadline, this.newDifficulty);
+    this.ddlStep = result.ddlStep;
+    this.doroWords = result.doroWords;
+    this.newTitle = result.newTitle;
+    this.newDeadline = result.newDeadline;
+    if (!result.shouldSync) {
+      return;
+    }
+    this.tasks = result.tasks;
+    this.selectedTaskId = result.selectedTaskId;
+    this.coins += result.coinsDelta;
+    this.syncLocalChange(result.feedback);
+    this.showQuickDdlCreate = false;
+  }
+
+  private handleFinishDdlTask(taskId: number): void {
+    const result: DdlTaskFinishResult = this.ddlTaskService.finishTask(this.tasks, taskId);
+    this.tasks = result.tasks;
+    if (!result.shouldSync) {
+      return;
+    }
+    this.coins += result.reward;
+    this.mood = this.clamp(this.mood + result.moodDelta);
+    this.satiety = this.clamp(this.satiety + result.satietyDelta);
+    this.doroWords = result.doroWords;
+    this.syncLocalChange(result.feedback);
+    if (!this.showDialogue) {
+      if (result.triggerOverdueDialogue) {
+        this.triggerDdlOverdueDialogue();
+      } else if (result.triggerDoneDialogue) {
+        this.triggerDdlDoneDialogue();
       }
     }
   }
@@ -416,7 +541,12 @@ struct Index {
       });
       const exists: boolean = this.foods.some((food: InventoryItem) => food.name === item.name);
       if (!exists) {
-        this.foods = [...this.foods, new InventoryItem(item.name, item.desc, 1)];
+        const nextFoods: InventoryItem[] = [];
+        for (let i: number = 0; i < this.foods.length; i++) {
+          nextFoods.push(this.foods[i]);
+        }
+        nextFoods.push(new InventoryItem(item.name, item.desc, 1));
+        this.foods = nextFoods;
       }
     } else if (item.category === 'outfit') {
       this.outfits = this.outfits.map((outfit: InventoryItem) => {
@@ -427,7 +557,12 @@ struct Index {
       });
       const exists: boolean = this.outfits.some((outfit: InventoryItem) => outfit.name === item.name);
       if (!exists) {
-        this.outfits = [...this.outfits, new InventoryItem(item.name, item.desc, 1)];
+        const nextOutfits: InventoryItem[] = [];
+        for (let i: number = 0; i < this.outfits.length; i++) {
+          nextOutfits.push(this.outfits[i]);
+        }
+        nextOutfits.push(new InventoryItem(item.name, item.desc, 1));
+        this.outfits = nextOutfits;
       }
     }
     this.doroWords = '购买了' + item.name + '！Doro 帮你收好了。';
@@ -445,6 +580,7 @@ struct Index {
       new FriendInfo(4, '栗子', '栗子的Doro', false),
       new FriendInfo(5, '小北', '小北的Doro', true)
     ];
+    this.updateAchievementProgress();
   }
 
   private searchFriends(): void {
@@ -474,35 +610,52 @@ struct Index {
   private addFriend(friendId: number): void {
     const found: FriendInfo | undefined = this.searchResults.find((f: FriendInfo) => f.id === friendId);
     if (found !== undefined) {
-      this.friends = [...this.friends, found];
-      this.searchResults = this.searchResults.filter((f: FriendInfo) => f.id !== friendId);
+      const nextFriends: FriendInfo[] = [];
+      for (let i: number = 0; i < this.friends.length; i++) {
+        nextFriends.push(this.friends[i]);
+      }
+      nextFriends.push(found);
+      this.friends = nextFriends;
+      const nextResults: FriendInfo[] = [];
+      for (let i: number = 0; i < this.searchResults.length; i++) {
+        const resultFriend: FriendInfo = this.searchResults[i];
+        if (resultFriend.id !== friendId) {
+          nextResults.push(resultFriend);
+        }
+      }
+    this.searchResults = nextResults;
       this.doroWords = '你和' + found.name + '成为好友了！';
       this.syncLocalChange('好友 +1');
+      this.updateAchievementProgress();
+      const unlocked = this.achievements.find((item: AchievementItem) => item.id === 'ach_friend_1');
+      if (unlocked !== undefined && unlocked.completed && !unlocked.claimed) {
+        this.showAchievementUnlockToast(unlocked.name);
+      }
     }
   }
 
   private toggleFocus(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId);
-      this.timerId = -1;
-      this.focusRunning = false;
-      this.doroWords = 'Doro 伸了个懒腰，等你继续。';
-      this.feedback = '已暂停';
-    } else if (this.focusSecondsLeft > 0) {
-      this.focusRunning = true;
-      this.doroWords = 'Doro 安静坐在旁边看书。';
-      this.feedback = '专注开始';
-      this.timerId = setInterval(() => {
-        if (this.focusSecondsLeft > 1) {
-          this.focusSecondsLeft -= 1;
-        } else {
-          this.focusSecondsLeft = 0;
-          this.focusRunning = false;
-          clearInterval(this.timerId);
-          this.timerId = -1;
-          this.onFocusComplete();
-        }
-      }, 1000);
+    const res: FocusToggleResult = this.focusTimerService.toggle(this.focusSecondsLeft, () => {
+      this.onFocusTick();
+    });
+    if (res.feedback.length === 0 && res.doroWords.length === 0 && !res.started && !res.focusRunning) {
+      return;
+    }
+    this.focusRunning = res.focusRunning;
+    if (res.feedback.length > 0) {
+      this.feedback = res.feedback;
+    }
+    if (res.doroWords.length > 0) {
+      this.doroWords = res.doroWords;
+    }
+  }
+
+  private onFocusTick(): void {
+    const tick: FocusTickResult = this.focusTimerService.tick(this.focusSecondsLeft);
+    this.focusSecondsLeft = tick.focusSecondsLeft;
+    this.focusRunning = tick.focusRunning;
+    if (tick.isComplete) {
+      this.onFocusComplete();
     }
   }
 
@@ -513,39 +666,46 @@ struct Index {
   }
 
   private continueFocus(extraMinutes: number): void {
-    this.focusSecondsLeft = extraMinutes * 60;
-    this.showFocusCompleteDialog = false;
+    const cont: FocusContinueResult = this.focusTimerService.continueMinutes(extraMinutes);
+    this.focusSecondsLeft = cont.focusSecondsLeft;
+    this.showFocusCompleteDialog = cont.showFocusCompleteDialog;
     this.toggleFocus();
   }
 
   private endFocusSession(): void {
-    const elapsedMinutes: number = this.focusDuration;
-    this.focusMinutesToday += elapsedMinutes;
-    this.focusCount += 1;
-    this.coins += 5;
-    this.mood = this.clamp(this.mood + 2);
-    if (this.focusMarkDdlDone && this.selectedTaskId !== -1) {
-      this.finishTask(this.selectedTaskId);
+    const res: FocusCompleteResult = this.focusTimerService.completeSession(
+      this.focusDuration,
+      this.focusCount,
+      this.focusMarkDdlDone,
+      this.selectedTaskId
+    );
+    this.focusMinutesToday += res.focusMinutesAdd;
+    this.focusCount += res.focusCountAdd;
+    this.coins += res.coinAdd;
+    this.mood = this.clamp(this.mood + res.moodAdd);
+    if (res.shouldMarkDdlDone) {
+      this.handleFinishDdlTask(this.selectedTaskId);
     }
-    if (this.focusCount % 4 === 0) {
-      this.outfits = this.outfits.map((item: InventoryItem) => {
+    if (res.shouldAddFragment) {
+      const nextOutfits: InventoryItem[] = [];
+      for (let i: number = 0; i < this.outfits.length; i++) {
+        const item: InventoryItem = this.outfits[i];
         if (item.name === '专注之星碎片') {
-          return new InventoryItem(item.name, item.desc, item.count + 1);
+          nextOutfits.push(new InventoryItem(item.name, item.desc, item.count + 1));
+        } else {
+          nextOutfits.push(item);
         }
-        return item;
-      });
-      this.doroWords = '专注完成！Doro 送来一片专注之星。';
-      this.syncLocalChange('+5 币  专注之星+1');
-    } else {
-      this.doroWords = '专注完成，Doro 给你递来小纸条。';
-      this.syncLocalChange('+5 币  心情+2');
+      }
+      this.outfits = nextOutfits;
     }
+    this.doroWords = res.doroWords;
+    this.syncLocalChange(res.feedback);
     this.showFocusCompleteDialog = false;
-    this.saveData();
+    this.persistSave();
   }
 
   private selectDuration(minutes: number): void {
-    if (this.timerId !== -1) {
+    if (!this.focusTimerService.canChangeDurationOrDdl()) {
       return;
     }
     this.focusDuration = minutes;
@@ -553,18 +713,15 @@ struct Index {
   }
 
   private resetFocus(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId);
-      this.timerId = -1;
-    }
-    this.focusRunning = false;
-    this.focusSecondsLeft = this.focusDuration * 60;
-    this.showFocusCompleteDialog = false;
-    this.doroWords = '专注已重置，准备好了随时开始。';
+    const res: FocusResetResult = this.focusTimerService.reset(this.focusDuration);
+    this.focusRunning = res.focusRunning;
+    this.focusSecondsLeft = res.focusSecondsLeft;
+    this.showFocusCompleteDialog = res.showFocusCompleteDialog;
+    this.doroWords = res.doroWords;
   }
 
   private selectDdlForFocus(taskId: number): void {
-    if (this.timerId !== -1) {
+    if (!this.focusTimerService.canChangeDurationOrDdl()) {
       return;
     }
     this.selectedTaskId = taskId;
@@ -723,236 +880,46 @@ struct Index {
   }
 
   private getCatAffection(catId: string): number {
-    const aff: CatAffection | undefined = this.catAffections[catId];
-    if (aff !== undefined) {
-      return aff.affection;
-    }
-    return 0;
+    return this.catNpcService.getCatAffection(catId);
   }
 
   private visitCat(catId: string): void {
-    const aff: CatAffection | undefined = this.catAffections[catId];
-    const today: string = new Date().getFullYear().toString() + '-' +
-      (new Date().getMonth() + 1).toString() + '-' + new Date().getDate().toString();
-    if (aff !== undefined) {
-      if (aff.lastVisitDate !== today) {
-        aff.affection = aff.affection + 2;
-        if (aff.affection > 100) {
-          aff.affection = 100;
-        }
-        aff.visitCount += 1;
-        aff.lastVisitDate = today;
-        const key: string = catId;
-        this.catAffections[key] = aff;
-        this.saveData();
-      }
-      this.selectedCatAffection = aff.affection;
-      this.selectedCatVisitCount = aff.visitCount;
-    }
-    const cat: CatNPC | null = getCatById(catId);
-    if (cat !== null) {
-      this.selectedCat = cat;
-      const todayNum: number = new Date().getDate();
-      this.catGreetingText = getDailyDialogue(cat, this.selectedCatAffection, todayNum);
-      this.catChatMessages = [];
-      const now: Date = new Date();
-      const time: string = this.pad(now.getHours()) + ':' + this.pad(now.getMinutes());
-      this.catChatMessages.push(new ChatMessage(false, this.catGreetingText, time));
-      this.catChatShowOptions = true;
-      this.catChatDone = false;
-      this.showCatDetail = true;
-    }
+    const state: CatNpcVisitState = this.catNpcService.visitCat(catId);
+    this.selectedCat = state.selectedCat;
+    this.selectedCatAffection = state.selectedCatAffection;
+    this.selectedCatVisitCount = state.selectedCatVisitCount;
+    this.catGreetingText = state.catGreetingText;
+    this.catChatMessages = state.catChatMessages;
+    this.catChatShowOptions = state.catChatShowOptions;
+    this.catChatDone = state.catChatDone;
+    this.showCatDetail = state.showCatDetail;
   }
 
   private pad(value: number): string {
     return value < 10 ? `0${value}` : `${value}`;
   }
 
-  private getCatResponseToOption(cat: CatNPC, optionIndex: number): string {
-    const personality: string = cat.personality;
-    if (personality === '焦虑') {
-      const replies: string[] = ['嗯…你这么说了我好像放心一点了…', '真的吗？那我信你一次！', '好…好，深呼吸…呼——'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '优雅') {
-      const replies: string[] = ['您过奖了…（优雅地点头）', '请坐，茶已经泡好了。', '和您聊天很愉快。'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '佛系') {
-      const replies: string[] = ['啊…好…（慢慢坐起来）', '嗯…我再躺五分钟…', '吃的？…也行吧…'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '严肃') {
-      const replies: string[] = ['嗯，继续保持。', '很好，有计划了吗？', '放松可以，但不能松懈。'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '害羞') {
-      const replies: string[] = ['！谢、谢谢…（脸红）', '好…好的…我慢慢来…', '你、你真好……'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '话痨') {
-      const replies: string[] = ['对吧对吧！我就知道你会感兴趣！', '还有还有！我还没说完呢！', '哈哈哈你懂我！'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '迷糊') {
-      const replies: string[] = ['诶？我刚刚说啥来着……', '哦对！谢谢你帮我找！', '嘿嘿…我是不是很麻烦…'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '暴躁') {
-      const replies: string[] = ['哼！我才不凶！', '别、别摸我头啦…', '打游戏？…行吧就陪你一会儿。'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '文艺') {
-      const replies: string[] = ['你也感受到那种情绪了吗…', '今天的风确实很适合这首诗。', '灵感像猫一样，强求不来的。'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '贪吃') {
-      const replies: string[] = ['真的吗！快给我尝尝！', '我才不胖！这是…毛茸茸！', '好啊好啊！吃什么！'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '傲娇') {
-      const replies: string[] = ['哼…你这么说我也不会高兴的！', '谁、谁要你夸了！', '今天…特地为我才穿这么好看的吗？'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    if (personality === '温柔') {
-      const replies: string[] = ['你也是我遇见过最温暖的人。', '累了就休息，我会一直在这里的。', '过来吧，给你一个抱抱~'];
-      return replies[Math.floor(Math.random() * replies.length)];
-    }
-    return '…谢谢你来看我。';
-  }
-
   private sendCatChatOption(optionIndex: number): void {
     if (this.selectedCat === null || this.catChatDone) {
       return;
     }
-    const personality: string = this.selectedCat.personality;
-    let options: string[] = [];
-    if (personality === '焦虑') {
-      options = ['别担心，有我呢！', '今天天气超好的~', '摸摸头冷静一下'];
-    } else if (personality === '优雅') {
-      options = ['你今天也好优雅~', '请多指教！', '一起喝杯茶吧'];
-    } else if (personality === '佛系') {
-      options = ['醒醒！太阳晒屁股了', '你继续睡吧~', '要不要吃点什么？'];
-    } else if (personality === '严肃') {
-      options = ['今天也很自律呢！', '我马上去写计划！', '不要太严格啦~'];
-    } else if (personality === '害羞') {
-      options = ['你好可爱呀！', '不要怕，我不会伤害你的', '慢慢来不着急'];
-    } else if (personality === '话痨') {
-      options = ['然后呢然后呢？', '哈哈哈好好笑', '你听我说！'];
-    } else if (personality === '迷糊') {
-      options = ['你又忘了什么呀？', '我帮你找找！', '小迷糊最可爱了'];
-    } else if (personality === '暴躁') {
-      options = ['你好凶哦…', '给你顺顺毛~', '要不要一起玩游戏？'];
-    } else if (personality === '文艺') {
-      options = ['好有意境的话呀', '我也喜欢~', '今天灵感怎么样？'];
-    } else if (personality === '贪吃') {
-      options = ['带好吃的了！', '你又胖了哈哈哈', '一起吃吧~'];
-    } else if (personality === '傲娇') {
-      options = ['你也很可爱啦！', '我才不是在夸你~', '今天特别好看哦'];
-    } else if (personality === '温柔') {
-      options = ['你太暖了！', '今天也辛苦了~', '抱抱！'];
-    } else {
-      options = ['你好呀！', '今天怎么样？', '一起加油吧~'];
-    }
-    const chosenText: string = options[optionIndex];
-    const now: Date = new Date();
-    const time: string = this.pad(now.getHours()) + ':' + this.pad(now.getMinutes());
-    this.catChatMessages.push(new ChatMessage(true, chosenText, time));
+    this.catNpcService.sendCatChatOption(this.selectedCat, optionIndex, this.catChatMessages);
     this.catChatShowOptions = false;
-    const reply: string = this.getCatResponseToOption(this.selectedCat, optionIndex);
+    this.catChatDone = true;
     setTimeout(() => {
-      const replyTime: string = this.pad(new Date().getHours()) + ':' + this.pad(new Date().getMinutes());
-      this.catChatMessages.push(new ChatMessage(false, reply, replyTime));
-      this.catChatDone = true;
-      setTimeout(() => {
-        this.closeCatDetail();
-      }, 1500);
-    }, 800);
+      this.closeCatDetail();
+    }, 1500);
   }
 
   private sendBento(catId: string, bentoId: string): void {
-    const aff: CatAffection | undefined = this.catAffections[catId];
-    if (aff === undefined) {
-      return;
-    }
-    const now: number = Date.now();
-    if (now - aff.lastGiftTime < 86400000) {
-      this.bentoReactionText = '今天已经送过了哦~明天再来吧！';
-      this.bentoReactionEmoji = '😴';
-      this.showBentoResult = true;
-      return;
-    }
-    const cat: CatNPC | null = getCatById(catId);
-    if (cat === null) {
-      return;
-    }
-    const bento: CatBento | null = getBentoById(bentoId);
-    if (bento === null) {
-      return;
-    }
-    if (this.coins < bento.price) {
-      this.bentoReactionText = '三叶草币不够啦…先完成DDL攒钱吧！';
-      this.bentoReactionEmoji = '😅';
-      this.showBentoResult = true;
-      return;
-    }
-    this.coins -= bento.price;
-    let liked: boolean = false;
-    let hated: boolean = false;
-    for (let i: number = 0; i < cat.likedBento.length; i++) {
-      if (cat.likedBento[i] === bento.name) {
-        liked = true;
-      }
-    }
-    for (let i: number = 0; i < cat.hatedBento.length; i++) {
-      if (cat.hatedBento[i] === bento.name) {
-        hated = true;
-      }
-    }
-    let gain: number = 4;
-    if (liked) {
-      gain = 8;
-    }
-    if (hated) {
-      gain = 1;
-    }
-    const oldLevel: string = getAffectionLevel(aff.affection);
-    aff.affection = aff.affection + gain;
-    if (aff.affection > 100) {
-      aff.affection = 100;
-    }
-    aff.lastGiftTime = now;
-    const catKey: string = catId;
-    this.catAffections[catKey] = aff;
-    this.selectedCatAffection = aff.affection;
-    this.saveData();
-    const result: BentoResult = getBentoReaction(cat, bento.name);
-    this.bentoReactionText = result.text;
-    this.bentoReactionEmoji = result.emoji;
-    this.showBentoResult = true;
-    this.catAffectionFloat = (gain > 0 ? '+' : '') + gain.toString();
-    this.showBentoPicker = false;
-    const newLevel: string = getAffectionLevel(aff.affection);
-    if (newLevel !== oldLevel) {
-      this.levelUpText = '你和' + cat.name + '的关系升级为【' + newLevel + '】啦！';
-      this.showLevelUp = true;
-      setTimeout(() => {
-        this.showLevelUp = false;
-        if (aff.affection >= 80) {
-          for (let i: number = 0; i < aff.receivedGifts.length; i++) {
-            if (aff.receivedGifts[i] === cat.giftName) {
-              return;
-            }
-          }
-          aff.receivedGifts.push(cat.giftName);
-          const k: string = catId;
-          this.catAffections[k] = aff;
-          this.saveData();
-          this.bentoReactionText = cat.name + '送给你【' + cat.giftName + '】作为挚友信物！' + cat.giftEmoji;
-          this.bentoReactionEmoji = '🎁';
-        }
-      }, 1500);
-    }
+    const resultState: CatNpcBentoResultState = this.catNpcService.sendBento(catId, bentoId, this.coins);
+    this.bentoReactionText = resultState.bentoReactionText;
+    this.bentoReactionEmoji = resultState.bentoReactionEmoji;
+    this.catAffectionFloat = resultState.catAffectionFloat;
+    this.levelUpText = resultState.levelUpText;
+    this.showBentoPicker = resultState.showBentoPicker;
+    this.showBentoResult = resultState.showBentoResult;
+    this.showLevelUp = resultState.showLevelUp;
   }
 
   private closeCatDetail(): void {
@@ -1213,14 +1180,15 @@ struct Index {
             expProgress: this.calcExpProgress(),
             coins: this.coins,
             gems: this.gems,
-            hasEventUpdate: this.hasEventUpdate,
+            claimableAchievementCount: this.countClaimableAchievements(),
             onAvatarClick: () => {
               this.profileName = this.username;
               this.showProfile = true;
             },
             onShopClick: () => {
               this.showShop = true;
-            }
+            },
+            onAchievementClick: () => this.openAchievementList()
           })
           Column() {
             if (this.activeTab === 0) {
@@ -1245,13 +1213,12 @@ struct Index {
                 newTitle: this.newTitle,
                 newDeadline: this.newDeadline,
                 newDifficulty: this.newDifficulty,
+                doroWords: this.doroWords,
                 onTitleChange: (value: string) => { this.newTitle = value; },
                 onDeadlineChange: (value: string) => { this.newDeadline = value; },
                 onDifficultyChange: (value: string) => { this.newDifficulty = value; },
-                onPrevStep: () => { if (this.ddlStep > 0) { this.ddlStep -= 1; } },
-                onNextStep: () => { this.ddlStep += 1; },
-                onAddTask: () => this.addTask(),
-                onFinishTask: (taskId: number) => this.finishTask(taskId)
+                onAddTask: () => this.handleAddDdlTask(),
+                onFinishTask: (taskId: number) => this.handleFinishDdlTask(taskId)
               })
             } else if (this.activeTab === 2) {
               FocusPage({
@@ -1272,7 +1239,11 @@ struct Index {
                 },
                 onToggle: () => this.toggleFocus(),
                 onReset: () => this.resetFocus(),
-                onSelectDdl: () => { if (this.timerId === -1) { this.showDdlPicker = true; } },
+                onSelectDdl: () => {
+                  if (this.focusTimerService.canChangeDurationOrDdl()) {
+                    this.showDdlPicker = true;
+                  }
+                },
                 onDdlSelect: (taskId: number) => this.selectDdlForFocus(taskId),
                 onCustomNameChange: (value: string) => { this.focusCustomName = value; },
                 onTouchDoro: () => this.touchDoro()
@@ -1326,6 +1297,19 @@ struct Index {
         .height('100%')
         .backgroundColor('#FFF4F7')
         .alignItems(HorizontalAlign.Center)
+
+        if (!this.showQuickDdlCreate && this.activeTab !== 2) {
+          DdlQuickFloatBar({
+            tasks: this.tasks,
+            onOpenDdlTab: () => {
+              this.activeTab = 1;
+              this.feedback = '';
+            },
+            onCreate: () => this.openQuickDdlCreate()
+          })
+          .position({ x: 12, y: '100%' })
+          .translate({ x: 0, y: -156 })
+        }
 
         if (this.showShop) {
           ShopAsOverlay({
@@ -1404,6 +1388,9 @@ struct Index {
                 this.doroWords = '名字需 2-12 个字符哦';
               }
             },
+            onAchievement: () => {
+              this.showProfile = false;
+            },
             onClose: () => { this.showProfile = false; }
           })
         }
@@ -1453,10 +1440,58 @@ struct Index {
             onClose: () => { this.showLevelUp = false; }
           })
         }
+        if (this.showAchievementList) {
+          AchievementListOverlay({
+            achievements: this.achievements,
+            onClaim: (achievementId: string) => this.claimAchievement(achievementId),
+            onClose: () => { this.showAchievementList = false; }
+          })
+        }
+        if (this.showAchievementUnlock) {
+          AchievementUnlockOverlay({
+            title: this.achievementUnlockName,
+            completedText: '已完成',
+            onOpen: () => {
+              this.showAchievementUnlock = false;
+              this.showAchievementList = true;
+            },
+            onClose: () => { this.showAchievementUnlock = false; }
+          })
+        }
+        if (this.showQuickDdlCreate) {
+          QuickDdlCreateOverlay({
+            ddlStep: this.ddlStep,
+            newTitle: this.newTitle,
+            newDeadline: this.newDeadline,
+            newDifficulty: this.newDifficulty,
+            doroWords: this.doroWords,
+            onTitleChange: (value: string) => { this.newTitle = value; },
+            onDeadlineChange: (value: string) => { this.newDeadline = value; },
+            onDifficultyChange: (value: string) => { this.newDifficulty = value; },
+            onPrev: () => this.handleQuickDdlPrev(),
+            onNext: () => this.handleQuickDdlNext(),
+            onAddTask: () => this.handleAddDdlTask(),
+            onClose: () => {
+              this.showQuickDdlCreate = false;
+              this.ddlStep = 0;
+            }
+          })
+        }
       }
       .width('100%')
       .height('100%')
     }
+  }
+
+  private countClaimableAchievements(): number {
+    let count: number = 0;
+    for (let i: number = 0; i < this.achievements.length; i++) {
+      const item: AchievementItem = this.achievements[i];
+      if (item.completed && !item.claimed) {
+        count += 1;
+      }
+    }
+    return count;
   }
 
   private useFood(index: number): void {
@@ -1475,5 +1510,6 @@ struct Index {
     this.mood = this.clamp(this.mood + 3);
     this.doroWords = `Doro 吃掉了${item.name}。`;
     this.syncLocalChange('饱腹 +12');
+    this.updateAchievementProgress();
   }
 }
