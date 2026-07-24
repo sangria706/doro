@@ -5,6 +5,7 @@ export struct DdlQuickFloatBar {
   @Prop tasks: DdlTask[] = [];
   onOpenDdlTab?: () => void;
   onCreate?: () => void;
+  onClose?: () => void;
 
   private pendingTasks(): DdlTask[] {
     const result: DdlTask[] = [];
@@ -91,6 +92,17 @@ export struct DdlQuickFloatBar {
           this.onCreate();
         }
       })
+
+      Text('✕')
+        .fontSize(14)
+        .fontColor('#CBBFBC')
+        .position({ x: '100%', y: 0 })
+        .translate({ x: -8, y: 8 })
+        .onClick(() => {
+          if (this.onClose !== undefined) {
+            this.onClose();
+          }
+        })
     }
     .width('72%')
     .height(76)

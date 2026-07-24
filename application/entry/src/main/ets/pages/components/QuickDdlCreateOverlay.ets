@@ -5,6 +5,7 @@ export struct QuickDdlCreateOverlay {
   @Prop newDeadline: string = '';
   @Prop newDifficulty: string = '';
   @Prop doroWords: string = '';
+  @State pickerDate: Date = new Date();
   onTitleChange?: (value: string) => void;
   onDeadlineChange?: (value: string) => void;
   onDifficultyChange?: (value: string) => void;
@@ -12,6 +13,34 @@ export struct QuickDdlCreateOverlay {
   onNext?: () => void;
   onAddTask?: () => void;
   onClose?: () => void;
+
+  aboutToAppear(): void {
+    if (this.newDeadline.length > 0) {
+      const parsed: Date = new Date(this.newDeadline.replace(' ', 'T'));
+      if (!isNaN(parsed.getTime())) {
+        this.pickerDate = parsed;
+      }
+    }
+  }
+
+  private formatDate(date: Date): string {
+    const y: number = date.getFullYear();
+    const m: string = this.padLocal(date.getMonth() + 1);
+    const d: string = this.padLocal(date.getDate());
+    const h: string = this.padLocal(date.getHours());
+    const min: string = this.padLocal(date.getMinutes());
+    return `${y}-${m}-${d} ${h}:${min}`;
+  }
+
+  private padLocal(n: number): string {
+    return n < 10 ? `0${n}` : `${n}`;
+  }
+
+  private notifyDeadlineChange(): void {
+    if (this.onDeadlineChange !== undefined) {
+      this.onDeadlineChange(this.formatDate(this.pickerDate));
+    }
+  }
 
   build() {
     Column() {
@@ -22,12 +51,13 @@ export struct QuickDdlCreateOverlay {
             .fontWeight(FontWeight.Bold)
             .fontColor('#5A403A')
             .layoutWeight(1)
-          Button('关闭')
-            .height(34)
-            .fontSize(12)
+          Button('✕')
+            .width(32)
+            .height(32)
+            .fontSize(16)
             .fontColor('#7D6862')
             .backgroundColor('#FFF4F7')
-            .borderRadius(17)
+            .borderRadius(16)
             .onClick(() => {
               if (this.onClose !== undefined) {
                 this.onClose();
@@ -41,6 +71,14 @@ export struct QuickDdlCreateOverlay {
           .fontColor('#9B7D76')
           .width('100%')
 
+        if (this.ddlStep === 1 && this.newDeadline.length > 0) {
+          Text('当前选择：' + this.newDeadline)
+            .fontSize(13)
+            .fontColor('#FF7F95')
+            .width('100%')
+            .textAlign(TextAlign.Center)
+        }
+
         if (this.ddlStep === 0) {
           TextInput({ placeholder: '请输入DDL内容...', text: this.newTitle })
             .height(46)
@@ -52,15 +90,37 @@ export struct QuickDdlCreateOverlay {
               }
             })
         } else if (this.ddlStep === 1) {
-          TextInput({ placeholder: '2026-07-21 14:00', text: this.newDeadline })
-            .height(46)
-            .backgroundColor('#FFF4F7')
-            .borderRadius(22)
-            .onChange((value: string) => {
-              if (this.onDeadlineChange !== undefined) {
-                this.onDeadlineChange(value);
-              }
+          Column({ space: 8 }) {
+            Text('📅 选择截止日期')
+              .fontSize(14)
+              .fontColor('#5A403A')
+              .width('100%')
+            DatePicker({
+              start: new Date(),
+              end: new Date('2100-12-31'),
+              selected: this.pickerDate
             })
+              .width('100%')
+              .onDateChange((value: Date) => {
+                const merged: Date = new Date(value);
+                merged.setHours(this.pickerDate.getHours(), this.pickerDate.getMinutes());
+                this.pickerDate = merged;
+                this.notifyDeadlineChange();
+              })
+            Text('⏰ 选择截止时间')
+              .fontSize(14)
+              .fontColor('#5A403A')
+              .width('100%')
+            TimePicker({
+              selected: this.pickerDate
+            })
+              .useMilitaryTime(true)
+              .width('100%')
+              .onChange((value: TimePickerResult) => {
+                this.pickerDate.setHours(value.hour, value.minute);
+                this.notifyDeadlineChange();
+              })
+          }
         } else {
           Column({ space: 10 }) {
             Row({ space: 8 }) {

@@ -23,9 +23,9 @@ import { TopInfoBar } from './components/TopInfoBar';
 import { BottomToolbar } from './components/BottomToolbar';
 import { FeedPickerOverlay, DressPickerOverlay, FocusCompleteOverlay, DdlPickerOverlay, ShopAsOverlay, SearchFriendOverlay, ProfileOverlay, DialogueOverlay, BentoPickerOverlay, BentoResultOverlay, LevelUpOverlay } from './components/Overlays';
 import { AchievementUnlockOverlay } from './components/AchievementOverlay';
-import { AchievementListOverlay } from './components/AchievementListOverlay';
 import { QuickDdlCreateOverlay } from './components/QuickDdlCreateOverlay';
 import { DdlQuickFloatBar } from './components/DdlQuickFloatBar';
+import { DashboardPage } from './DashboardPage';
 
 @Entry
 @Component
@@ -47,9 +47,9 @@ struct Index {
   @State newTitle: string = '';
   @State newDeadline: string = '';
   @State newDifficulty: string = '困难';
-  @State mood: number = 76;
-  @State satiety: number = 68;
-  @State coins: number = 328;
+  @State mood: number = 60;
+  @State satiety: number = 60;
+  @State coins: number = 0;
   @State comfort: number = 13;
   @State focusMinutesToday: number = 75;
   @State focusCount: number = 3;
@@ -61,6 +61,8 @@ struct Index {
   @State focusMarkDdlDone: boolean = false;
   @State showDdlPicker: boolean = false;
   @State showQuickDdlCreate: boolean = false;
+  @State showDashboard: boolean = false;
+  @State showFloatBar: boolean = true;
   @State showFeedPicker: boolean = false;
   @State showDressPicker: boolean = false;
   @State shopTab: number = 0;
@@ -73,12 +75,8 @@ struct Index {
   @State showFriendSearch: boolean = false;
   @State feedback: string = '';
   @State doroWords: string = '今天天气真好，一起加油吧！';
-  @State tasks: DdlTask[] = [
-    new DdlTask(1, '提交项目方案', '2026-07-21 14:00', '困难', 80, false),
-    new DdlTask(2, '回教授邮件', '2026-07-19 18:00', '简单', 30, false),
-    new DdlTask(3, '复习期末重点', '2026-07-18 20:00', '普通', 65, false),
-    new DdlTask(4, '整理第一份 DDL', '2026-07-17 16:30', '简单', 100, true)
-  ];
+  @State tasks: DdlTask[] = [];
+  @State isNewPlayer: boolean = false;
   private ddlTaskService: DdlTaskService = new DdlTaskService();
   private readonly focusTimerService: FocusTimerService = new FocusTimerService();
   private readonly saveService: SaveDataService = new SaveDataService();
@@ -109,7 +107,7 @@ struct Index {
     new ShopItem('薄荷绿植', '舒适度 +3', 14, 'furniture', 0, 0),
     new ShopItem('暖光小灯', '舒适度 +5', 22, 'furniture', 0, 0)
   ];
-  @State gems: number = 48;
+  @State gems: number = 0;
   @State hasEventUpdate: boolean = true;
   @State showDialogue: boolean = false;
   @State currentDialogueId: string = '';
@@ -157,9 +155,18 @@ struct Index {
   private achievementUnlockTimer: number = -1;
 
   aboutToAppear(): void {
+    PersistentStorage.persistProp('doro_tutorial_done', false);
     this.loadData();
     this.initFriends();
     this.initCatAffections();
+    const tutorialDone: Object | undefined = AppStorage.get('doro_tutorial_done') as Object | undefined;
+    const tutorialFlag: boolean = tutorialDone === true;
+    if (!tutorialFlag && this.tasks.length === 0 && this.focusCount === 0) {
+      this.isNewPlayer = true;
+      this.coins = 0;
+      this.mood = 60;
+      this.satiety = 60;
+    }
     setTimeout(() => {
       this.checkAndTriggerDialogue();
     }, 500);
@@ -858,6 +865,7 @@ struct Index {
   }
 
   private closeDialogue(): void {
+    const wasTutorial: boolean = this.currentDialogueId === 'doro_tutorial_01' || this.currentDialogueId === 'doro_tutorial_02';
     this.showDialogue = false;
     this.dialogueManager.endDialogue();
     if (this.dialogueTypewriterTimer !== -1) {
@@ -868,6 +876,11 @@ struct Index {
     if (this.dialogueCoinReward > 0) {
       this.syncLocalChange('+' + this.dialogueCoinReward.toString() + '币  好感+' + this.dialogueAffinity.toString());
       this.dialogueCoinReward = 0;
+    }
+    if (wasTutorial && this.isNewPlayer) {
+      AppStorage.set('doro_tutorial_done', true);
+      this.isNewPlayer = false;
+      this.persistSave();
     }
   }
 
@@ -1160,6 +1173,11 @@ struct Index {
         .borderRadius(24)
         .onClick(() => {
           this.appStage = 4;
+          if (this.isNewPlayer) {
+            setTimeout(() => {
+              this.startDialogueById('doro_tutorial_01');
+            }, 300);
+          }
         })
       Blank()
     }
@@ -1188,7 +1206,8 @@ struct Index {
             onShopClick: () => {
               this.showShop = true;
             },
-            onAchievementClick: () => this.openAchievementList()
+            onAchievementClick: () => this.openAchievementList(),
+            onDashboardClick: () => { this.showDashboard = true; }
           })
           Column() {
             if (this.activeTab === 0) {
@@ -1298,14 +1317,15 @@ struct Index {
         .backgroundColor('#FFF4F7')
         .alignItems(HorizontalAlign.Center)
 
-        if (!this.showQuickDdlCreate && this.activeTab !== 2) {
+        if (this.showFloatBar && !this.showQuickDdlCreate && this.activeTab !== 2) {
           DdlQuickFloatBar({
             tasks: this.tasks,
             onOpenDdlTab: () => {
               this.activeTab = 1;
               this.feedback = '';
             },
-            onCreate: () => this.openQuickDdlCreate()
+            onCreate: () => this.openQuickDdlCreate(),
+            onClose: () => { this.showFloatBar = false; }
           })
           .position({ x: 12, y: '100%' })
           .translate({ x: 0, y: -156 })
@@ -1440,20 +1460,13 @@ struct Index {
             onClose: () => { this.showLevelUp = false; }
           })
         }
-        if (this.showAchievementList) {
-          AchievementListOverlay({
-            achievements: this.achievements,
-            onClaim: (achievementId: string) => this.claimAchievement(achievementId),
-            onClose: () => { this.showAchievementList = false; }
-          })
-        }
         if (this.showAchievementUnlock) {
           AchievementUnlockOverlay({
             title: this.achievementUnlockName,
             completedText: '已完成',
             onOpen: () => {
               this.showAchievementUnlock = false;
-              this.showAchievementList = true;
+              this.showDashboard = true;
             },
             onClose: () => { this.showAchievementUnlock = false; }
           })
@@ -1476,6 +1489,55 @@ struct Index {
               this.ddlStep = 0;
             }
           })
+        }
+        if (this.showDashboard) {
+          Column() {
+            Column({ space: 10 }) {
+              Row() {
+                Text('数据看板')
+                  .fontSize(20)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#5A403A')
+                  .layoutWeight(1)
+                Button('✕')
+                  .width(32)
+                  .height(32)
+                  .fontSize(16)
+                  .fontColor('#7D6862')
+                  .backgroundColor('#FFF4F7')
+                  .borderRadius(16)
+                  .onClick(() => { this.showDashboard = false; })
+              }
+              .width('100%')
+              DashboardPage({
+                tasks: this.tasks,
+                focusCount: this.focusCount,
+                focusMinutesToday: this.focusMinutesToday,
+                mood: this.mood,
+                satiety: this.satiety,
+                coins: this.coins,
+                comfort: this.comfort,
+                achievements: this.achievements,
+                currentLevel: this.calcLevel(),
+                expProgress: this.calcExpProgress(),
+                onClaimAchievement: (achievementId: string) => {
+                  const result = this.claimAchievement(achievementId);
+                  return result;
+                }
+              })
+            }
+            .width('88%')
+            .constraintSize({ maxHeight: '85%' })
+            .padding(20)
+            .backgroundColor('#FFFFFC')
+            .borderRadius(24)
+            .shadow({ radius: 30, color: '#33FF9EAF', offsetX: 0, offsetY: 10 })
+          }
+          .width('100%')
+          .height('100%')
+          .backgroundColor('#AAFFEAF0')
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
         }
       }
       .width('100%')

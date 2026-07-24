@@ -8,11 +8,34 @@ export struct DdlPage {
   @Prop newDeadline: string = '';
   @Prop newDifficulty: string = '';
   @Prop doroWords: string = '';
+  @State pickerDate: Date = new Date();
   onTitleChange?: (value: string) => void;
   onDeadlineChange?: (value: string) => void;
   onDifficultyChange?: (value: string) => void;
   onAddTask?: () => void;
   onFinishTask?: (taskId: number) => void;
+
+  aboutToAppear(): void {
+    if (this.newDeadline.length > 0) {
+      const parsed: Date = new Date(this.newDeadline.replace(' ', 'T'));
+      if (!isNaN(parsed.getTime())) {
+        this.pickerDate = parsed;
+      }
+    }
+  }
+
+  private formatDate(date: Date): string {
+    const y: number = date.getFullYear();
+    const m: string = this.pad2(date.getMonth() + 1);
+    const d: string = this.pad2(date.getDate());
+    const h: string = this.pad2(date.getHours());
+    const min: string = this.pad2(date.getMinutes());
+    return `${y}-${m}-${d} ${h}:${min}`;
+  }
+
+  private pad2(n: number): string {
+    return n < 10 ? `0${n}` : `${n}`;
+  }
 
   build() {
     Scroll() {
@@ -70,15 +93,48 @@ export struct DdlPage {
             }
           })
       } else if (this.ddlStep === 1) {
-        TextInput({ placeholder: '2026-07-21 14:00', text: this.newDeadline })
-          .height(46)
-          .backgroundColor('#FFF4F7')
-          .borderRadius(22)
-          .onChange((value: string) => {
-            if (this.onDeadlineChange !== undefined) {
-              this.onDeadlineChange(value);
-            }
+        Column({ space: 8 }) {
+          Text('📅 选择截止日期')
+            .fontSize(14)
+            .fontColor('#5A403A')
+            .width('100%')
+          DatePicker({
+            start: new Date(),
+            end: new Date('2100-12-31'),
+            selected: this.pickerDate
           })
+            .width('100%')
+            .onDateChange((value: Date) => {
+              const merged: Date = new Date(value);
+              merged.setHours(this.pickerDate.getHours(), this.pickerDate.getMinutes());
+              this.pickerDate = merged;
+              if (this.onDeadlineChange !== undefined) {
+                this.onDeadlineChange(this.formatDate(merged));
+              }
+            })
+          Text('⏰ 选择截止时间')
+            .fontSize(14)
+            .fontColor('#5A403A')
+            .width('100%')
+          TimePicker({
+            selected: this.pickerDate
+          })
+            .useMilitaryTime(true)
+            .width('100%')
+            .onChange((value: TimePickerResult) => {
+              this.pickerDate.setHours(value.hour, value.minute);
+              if (this.onDeadlineChange !== undefined) {
+                this.onDeadlineChange(this.formatDate(this.pickerDate));
+              }
+            })
+          if (this.newDeadline.length > 0) {
+            Text('已选：' + this.newDeadline)
+              .fontSize(13)
+              .fontColor('#FF7F95')
+              .width('100%')
+              .textAlign(TextAlign.Center)
+          }
+        }
       } else if (this.ddlStep === 2) {
         Column({ space: 10 }) {
           Row({ space: 8 }) {

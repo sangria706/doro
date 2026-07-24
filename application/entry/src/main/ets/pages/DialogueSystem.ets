@@ -839,6 +839,50 @@ export const ALL_DIALOGUES: DialogueEntry[] = [
       }
     ],
     triggerType: 'milestone', triggerValue: 'streak_10', priority: 100, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'doro_tutorial_01',
+    speaker: 'doro',
+    speakerEmoji: '🌸',
+    text: '你好呀！我是你的Doro！终于等到你了~ 你现在是新手状态：金币0、饱腹60、心情60。不过别担心，有我在你身边！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_tutorial_01_a', text: '你好Doro！以后请多关照~', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 1, coinChange: 0, unlockItem: null, unlockDialogue: 'doro_tutorial_02' },
+        response: '嗯嗯！我会一直陪着你的！先带你熟悉一下这里的环境~', responseMood: '开心', nextDialogueId: 'doro_tutorial_02'
+      },
+      {
+        optionId: 'doro_tutorial_01_b', text: '这里好陌生…我该怎么做？', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 1, affectionChange: 2, coinChange: 0, unlockItem: null, unlockDialogue: 'doro_tutorial_02' },
+        response: '不用怕！先熟悉一下界面——上面是你的状态，下面是功能菜单。我来给你讲讲怎么玩！', responseMood: '温柔', nextDialogueId: 'doro_tutorial_02'
+      }
+    ],
+    triggerType: 'manual', triggerValue: 'tutorial', priority: 100, isOnce: true, cooldownHours: 0
+  },
+  {
+    dialogueId: 'doro_tutorial_02',
+    speaker: 'doro',
+    speakerEmoji: '🎁',
+    text: '先给你200四叶草币作为启动资金！可以去商店买食物来喂我，或者创建DDL契约来赚更多金币。点击右下角的➕号可以创建你的第一个契约！',
+    mood: '开心',
+    options: [
+      {
+        optionId: 'doro_tutorial_02_a', text: '好！我现在就去试试！', tone: '认真',
+        unlockCondition: null,
+        effects: { moodChange: 3, affectionChange: 1, coinChange: 200, unlockItem: null, unlockDialogue: null },
+        response: '太棒了！记得到处点点看，喂食、抚摸、装扮都可以提升我们的亲密度哦！加油~', responseMood: '开心', nextDialogueId: null
+      },
+      {
+        optionId: 'doro_tutorial_02_b', text: '再陪我聊一会儿~', tone: '温柔',
+        unlockCondition: null,
+        effects: { moodChange: 2, affectionChange: 2, coinChange: 200, unlockItem: null, unlockDialogue: null },
+        response: '当然可以！不过要记住——DDL契约是我们的核心玩法，完成任务可以获得金币和成就感！记得经常来看看我哦~', responseMood: '开心', nextDialogueId: null
+      }
+    ],
+    triggerType: 'manual', triggerValue: 'tutorial', priority: 100, isOnce: true, cooldownHours: 0
   }
 ];
 

@@ -9,6 +9,7 @@ export struct TopInfoBar {
   onAvatarClick?: () => void;
   onShopClick?: () => void;
   onAchievementClick?: () => void;
+  onDashboardClick?: () => void;
 
   build() {
     Column() {
@@ -61,26 +62,17 @@ export struct TopInfoBar {
       .width('100%')
       .padding({ top: 6, bottom: 6 })
       Row({ space: 6 }) {
-        Stack({ alignContent: Alignment.TopEnd }) {
-          Text('成就')
-            .fontSize(12)
-            .fontColor('#FFFFFF')
-            .padding({ left: 12, right: 12, top: 5, bottom: 5 })
-            .backgroundColor('#BBA6E8')
-            .borderRadius(14)
-          if (this.claimableAchievementCount > 0) {
-            Circle()
-              .width(8)
-              .height(8)
-              .fill('#FF4757')
-              .margin({ top: -2, right: -2 })
-          }
-        }
-        .onClick(() => {
-          if (this.onAchievementClick !== undefined) {
-            this.onAchievementClick();
-          }
-        })
+        Text('看板')
+          .fontSize(12)
+          .fontColor('#FFFFFF')
+          .padding({ left: 12, right: 12, top: 5, bottom: 5 })
+          .backgroundColor('#FF8F9F')
+          .borderRadius(14)
+          .onClick(() => {
+            if (this.onDashboardClick !== undefined) {
+              this.onDashboardClick();
+            }
+          })
         this.IconBtn('设置')
         this.IconBtn('音效')
         this.IconBtn('更多')
