@@ -3,15 +3,14 @@ import { DdlTask } from './AppState';
 @Component
 export struct DdlPage {
   @Prop tasks: DdlTask[] = [];
-  @Prop ddlStep: number = 0;
+  @Prop readonly ddlStep: number = 0;
   @Prop newTitle: string = '';
   @Prop newDeadline: string = '';
   @Prop newDifficulty: string = '';
+  @Prop doroWords: string = '';
   onTitleChange?: (value: string) => void;
   onDeadlineChange?: (value: string) => void;
   onDifficultyChange?: (value: string) => void;
-  onPrevStep?: () => void;
-  onNextStep?: () => void;
   onAddTask?: () => void;
   onFinishTask?: (taskId: number) => void;
 
@@ -112,6 +111,12 @@ export struct DdlPage {
         .backgroundColor('#FFF0C9')
         .borderRadius(20)
       }
+      Text(this.doroWords)
+        .fontSize(14)
+        .fontColor('#FF5A7A')
+        .fontWeight(FontWeight.Medium)
+        .width('100%')
+        .visibility(this.doroWords.length > 0 ? Visibility.Visible : Visibility.None)
       Row({ space: 10 }) {
         Button('上一步')
           .layoutWeight(1)
@@ -121,11 +126,9 @@ export struct DdlPage {
           .backgroundColor('#FFF4F7')
           .borderRadius(21)
           .onClick(() => {
-            if (this.onPrevStep !== undefined) {
-              this.onPrevStep();
-            }
+            return;
           })
-        Button(this.ddlStep === 3 ? '我承诺' : '下一步')
+        Button(this.ddlStep === 2 ? '我承诺' : '下一步')
           .layoutWeight(1)
           .height(42)
           .fontColor('#FFFFFF')
@@ -133,13 +136,9 @@ export struct DdlPage {
           .backgroundColor('#FF8F9F')
           .borderRadius(21)
           .onClick(() => {
-            if (this.ddlStep === 3) {
+            if (this.ddlStep === 2) {
               if (this.onAddTask !== undefined) {
                 this.onAddTask();
-              }
-            } else {
-              if (this.onNextStep !== undefined) {
-                this.onNextStep();
               }
             }
           })
